@@ -21,7 +21,7 @@ informed: [dev team]
 3. **単一リポ：Drupal=DDEV、frontend=docker-compose（または host）。取得＋API は単一モジュール `slack_portal` に集約**
 
 ## Decision Outcome
-採用: **Option 3**。リポ直下に Drupal recommended-project（`web/`）、`web/modules/custom/slack_portal/`（ingest と portal をサブディレクトリ分離）、`frontend/`。**Drupal は DDEV**（php/composer/drush をコンテナ同梱）、frontend は最小 `docker-compose.yml`（または `npm run dev`）。
+採用: **Option 3**。リポ直下に Drupal recommended-project（`web/`）、**単一モジュール `web/modules/custom/slack_portal/`（同一モジュール内でディレクトリ分離：ingest は `src/Service`・`src/Drush`・`src/Plugin/QueueWorker`、portal は `config/install`・`migrations`・`src/Plugin/migrate`）**、`frontend/`。**Drupal は DDEV**（php/composer/drush をコンテナ同梱）、frontend は最小 `docker-compose.yml`（または `npm run dev`）。CLAUDE.md §10 と整合。
 
 ## Consequences
 ### Positive

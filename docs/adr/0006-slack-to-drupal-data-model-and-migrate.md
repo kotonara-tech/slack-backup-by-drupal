@@ -20,7 +20,7 @@ canonical JSON（ADR-0004）を Drupal のエンティティに落とし込み�
 3. Feeds モジュール
 
 ## Decision Outcome
-採用: **Option 2**。`slack_message` content type（body・channel 参照・slack_user_id・slack_ts(一意)・posted_at・reactions・添付）＋ channel は taxonomy（`slack_channels`）＋ user/file は参照。`migrate_plus`/`migrate_tools` の JSON source で canonical JSON から取込（`ids` に slack_ts → 冪等）。channels→users→messages→files の依存順。
+採用: **Option 2**。`slack_message` content type（body・field_channel 参照・field_slack_user_id・field_slack_ts(一意)・field_posted_at・field_reactions・添付）＋ channel は taxonomy（`slack_channels`）＋ user/file は参照。`migrate_plus`/`migrate_tools` の JSON source で canonical JSON から取込（`ids` に field_slack_ts → 冪等）。channels→users→messages→files の依存順。
 
 ## Consequences
 ### Positive
