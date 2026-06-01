@@ -1,0 +1,14 @@
+# frontend (Next.js) のみ。Drupal / MariaDB は DDEV 側（.ddev/config.yaml）。
+# 代替: フロントをホストで動かす場合は `cd frontend && npm run dev`。
+services:
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      NEXT_PUBLIC_DRUPAL_BASE_URL: ${NEXT_PUBLIC_DRUPAL_BASE_URL:-https://slack-backup-by-drupal.ddev.site}
+    ports:
+      - "${FRONTEND_HOST_PORT:-3000}:3000"
+    volumes:
+      - ./frontend/app:/app/app
+      - ./frontend/lib:/app/lib
+      - /app/node_modules

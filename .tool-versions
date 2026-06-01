@@ -1,0 +1,2 @@
+# asdf tool versions（任意。DDEV はコンテナ内で php/composer/drush を提供するため必須ではない）
+nodejs 22.11.0

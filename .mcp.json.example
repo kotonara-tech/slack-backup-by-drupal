@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "_comment": "プロジェクトで MCP サーバを使う場合の雛形。コピーして .mcp.json を作る（.mcp.json は必要に応じて gitignore）。現状このプロジェクトでは MCP サーバは未使用。"
+  }
+}

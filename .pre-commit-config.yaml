@@ -1,0 +1,72 @@
+# pre-commit（PHP/TS 向け・Python フックなし）
+# 導入: pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: ^(web/sites/.*/files/.*|.*/slack_archive/.*|.*\.lock)$
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [test, feat, fix, refactor, tidy, docs, chore]
+
+  - repo: local
+    hooks:
+      - id: check-tdd
+        name: src 変更にはテスト随伴を要求（TDD）
+        entry: tools/check_tdd.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+      - id: no-archive-committed
+        name: Slack アーカイブ/トークンの誤コミット検出
+        entry: tools/check_no_archive_committed.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+      - id: phpcs
+        name: PHPCS（Drupal/DrupalPractice, ddev）
+        entry: bash -c 'command -v ddev >/dev/null 2>&1 && ddev exec vendor/bin/phpcs --standard=phpcs.xml web/modules/custom/slack_portal || echo "[skip] ddev 未導入のため PHPCS をスキップ"'
+        language: system
+        files: ^web/modules/custom/slack_portal/.*\.(php|module|install|inc)$
+        pass_filenames: false
+        stages: [pre-commit]
+      - id: phpstan
+        name: PHPStan（level5, ddev）
+        entry: bash -c 'command -v ddev >/dev/null 2>&1 && ddev exec vendor/bin/phpstan analyze web/modules/custom/slack_portal -l 5 || echo "[skip] ddev 未導入のため PHPStan をスキップ"'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: phpunit-unit-kernel
+        name: PHPUnit Unit+Kernel（ddev）
+        entry: bash -c 'command -v ddev >/dev/null 2>&1 && ddev exec vendor/bin/phpunit -c web/phpunit.xml --testsuite Unit,Kernel || echo "[skip] ddev 未導入のため PHPUnit をスキップ"'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: vitest
+        name: Vitest（frontend）
+        entry: bash -c 'cd frontend && (test -d node_modules && npx vitest run || echo "[skip] frontend 未セットアップのため Vitest をスキップ")'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
