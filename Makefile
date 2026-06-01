@@ -15,7 +15,7 @@ setup: ## DDEV 導入(無ければ)→start→composer install→frontend npm ci
 	ddev start
 	ddev composer install
 	@test -f web/phpunit.xml || cp web/core/phpunit.xml.dist web/phpunit.xml
-	cd frontend && npm ci
+	cd frontend && (npm ci || npm install)   # 初回(lock 無し)は install で lock を生成
 	pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
 
 ddev-up: ## DDEV を起動
@@ -42,7 +42,7 @@ phpcbf: ## PHPCS 自動修正
 	ddev exec vendor/bin/phpcbf --standard=phpcs.xml $(MODULE)
 
 test-frontend: ## Vitest
-	cd frontend && npx vitest run
+	cd frontend && npm test
 
 frontend-build: ## Next.js ビルド
 	cd frontend && npm run build
@@ -56,7 +56,7 @@ typecheck: ## frontend 型チェック
 ci-local: ## CI 相当をローカルで実行（push 前に必須） = /local-ci all
 	pre-commit run --all-files
 	$(MAKE) phpstan phpcs phpunit
-	cd frontend && npm run typecheck && npm run lint && npx vitest run && npm run build
+	cd frontend && npm run typecheck && npm run lint && npm test && npm run build
 
 export: ## ★ 実 Slack 取得（90日分 → canonical JSON）
 	ddev drush slack:export --since=$${SLACK_EXPORT_SINCE_DAYS:-90}

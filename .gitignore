@@ -93,6 +93,8 @@
 
 # Frontend (Next.js / Node)
 /frontend/node_modules
+/frontend/next-env.d.ts
+/frontend/*.tsbuildinfo
 /frontend/.next
 /frontend/out
 /frontend/coverage
@@ -104,3 +106,5 @@
 .DS_Store
 *.log
 
+/.editorconfig
+/.gitattributes
