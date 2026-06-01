@@ -1,0 +1,10 @@
+<?php
+
+/**
+ * @file
+ * Install / update / uninstall hooks for Slack Portal.
+ *
+ * 初期スキーマ・設定の投入が必要になった時点で TDD で追加する。
+ */
+
+declare(strict_types=1);

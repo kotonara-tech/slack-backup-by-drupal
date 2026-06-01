@@ -1,0 +1,12 @@
+<?php
+
+/**
+ * @file
+ * Slack Portal module.
+ *
+ * 実装は TDD（Red→Green→Refactor）で docs/plan のマイルストーン順に追加する。
+ * 取得(ingest)は src/Service・src/Drush・src/Plugin/QueueWorker、
+ * 取込/公開(portal)は migrations/・config/install/・src/Plugin/migrate に置く。
+ */
+
+declare(strict_types=1);

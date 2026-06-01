@@ -1,0 +1,17 @@
+name: Slack Portal
+type: module
+description: 'Slack の取得(Drush/Queue)・canonical JSON 出力・Migrate 取込・JSON:API/検索の公開を担う社内ポータルモジュール。'
+package: Custom
+core_version_requirement: ^11
+# 依存（composer で導入済みであること）。ingest は core のみでも動くが、portal は以下を要する。
+dependencies:
+  - 'drupal:jsonapi'
+  - 'drupal:migrate'
+  - 'search_api:search_api'
+  - 'search_api:search_api_db'
+  - 'jsonapi_search_api:jsonapi_search_api'
+  - 'jsonapi_extras:jsonapi_extras'
+  - 'facets:facets'
+  - 'migrate_plus:migrate_plus'
+  - 'migrate_tools:migrate_tools'
+  - 'key:key'
