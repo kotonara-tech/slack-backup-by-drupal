@@ -23,10 +23,9 @@ jobs:
               - 'web/modules/custom/slack_portal/**'
               - 'composer.json'
               - 'composer.lock'
-              - '**/migrations/**'
-              - '**/config/install/**'
               - 'phpstan.neon'
               - 'phpcs.xml'
+              - 'web/phpunit.xml'
             frontend:
               - 'frontend/**'
 

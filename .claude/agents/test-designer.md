@@ -1,7 +1,7 @@
 ---
 name: test-designer
 description: 機能要件を Given-When-Then の BDD シナリオに分解し、Plan ファイルへ ToDo として追記する。各 ToDo に small/medium/large を付与し、適切な実装エージェント（drupal-backend-implementer / frontend-implementer）へルーティングする。新機能の着手前・テスト設計時に使う。テストや実装は書かない。
-tools: Read, Write, Grep, WebFetch
+tools: Read, Write, Grep, Bash, WebFetch
 model: opus
 ---
 
