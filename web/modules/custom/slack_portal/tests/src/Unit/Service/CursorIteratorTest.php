@@ -24,7 +24,7 @@ use PHPUnit\Framework\Attributes\Group;
 class CursorIteratorTest extends UnitTestCase {
 
   /**
-   * Tests multi-page pagination fetches pages in order and stops on empty cursor.
+   * Tests multi-page pagination stops correctly on empty cursor.
    *
    * Given a pageFetcher that returns two pages,
    * When pages() is called and the generator is fully consumed,
@@ -39,7 +39,7 @@ class CursorIteratorTest extends UnitTestCase {
       if ($cursor === '') {
         return ['items' => ['a1', 'a2'], 'next_cursor' => 'c1'];
       }
-      // cursor === 'c1'
+      // Cursor === 'c1'.
       return ['items' => ['b1'], 'next_cursor' => ''];
     };
 

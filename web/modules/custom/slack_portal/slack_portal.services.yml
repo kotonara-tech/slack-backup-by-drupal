@@ -3,3 +3,6 @@
 services:
   slack_portal.client_factory:
     class: Drupal\slack_portal\Service\SlackClientFactory
+
+  slack_portal.cursor_iterator:
+    class: Drupal\slack_portal\Service\CursorIterator
