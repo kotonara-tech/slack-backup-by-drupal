@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\slack_portal\Unit\Service;
 
+use JoliCode\Slack\Api\Client;
 use Drupal\Tests\UnitTestCase;
 use Drupal\slack_portal\Service\CursorIterator;
 use Drupal\slack_portal\Service\SlackClientFactory;
@@ -38,7 +39,7 @@ class SlackFetcherTest extends UnitTestCase {
    *
    * @var string
    */
-  // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
+  // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar,DrupalPractice.Commenting.CommentEmptyLine.SpacingAfter
   private const TEST_TOKEN = 'xoxp-test'; // pragma: allowlist secret
 
   /**
@@ -46,13 +47,13 @@ class SlackFetcherTest extends UnitTestCase {
    *
    * @param \GuzzleHttp\Handler\MockHandler $mock
    *   The mock handler to drive.
-   * @param array<array{request:\Psr\Http\Message\RequestInterface,response:\Psr\Http\Message\ResponseInterface|null}> $history
-   *   A by-reference array that Guzzle will populate with request/response pairs.
+   * @param array<array{request:\Psr\Http\Message\RequestInterface,response:mixed}> $history
+   *   A by-reference array Guzzle populates with request/response pairs.
    *
    * @return \JoliCode\Slack\Api\Client
    *   A configured Slack API client backed by the MockHandler.
    */
-  private function buildClient(MockHandler $mock, array &$history = []): \JoliCode\Slack\Api\Client {
+  private function buildClient(MockHandler $mock, array &$history = []): Client {
     // Build through SlackClientFactory so retry middleware is included.
     // We cannot add history middleware after the factory builds the stack, so
     // we push it onto a wrapping stack before handing off to the factory.
@@ -102,7 +103,7 @@ class SlackFetcherTest extends UnitTestCase {
 
     // The second successful request carried cursor=c1.
     // History contains: [page1-request, 429-request, retry-request].
-    // The last request (index 2) is the page-2 retry; it must include cursor=c1.
+    // The last request is the page-2 retry; it must include cursor=c1.
     $this->assertGreaterThanOrEqual(2, count($history), 'At least 2 requests must have been recorded.');
     $lastRequest = end($history)['request'];
     $this->assertNotNull($lastRequest);

@@ -12,3 +12,11 @@ services:
 
   slack_portal.thread_folder:
     class: Drupal\slack_portal\Service\ThreadFolder
+
+  logger.channel.slack_portal:
+    parent: logger.channel_base
+    arguments: ['slack_portal']
+
+  slack_portal.fetcher:
+    class: Drupal\slack_portal\Service\SlackFetcher
+    arguments: ['@slack_portal.cursor_iterator', '@logger.channel.slack_portal']
