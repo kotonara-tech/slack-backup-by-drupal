@@ -99,5 +99,12 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: cd frontend && npm ci
-      - run: cd frontend && npx playwright install --with-deps chromium
-      - run: cd frontend && npx playwright test
+      - name: Playwright E2E (skip until specs exist)
+        run: |
+          cd frontend
+          if [ -n "$(find tests/e2e -name '*.spec.ts' -print -quit 2>/dev/null)" ]; then
+            npx playwright install --with-deps chromium
+            npx playwright test
+          else
+            echo "no Playwright specs yet — skipping (skeleton; specs land in docs/plan 04/05)"
+          fi
