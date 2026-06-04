@@ -1,0 +1,40 @@
+{
+  "name": "slack-portal-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "next": "^15",
+    "next-drupal": "^2",
+    "react": "^19",
+    "react-dom": "^19",
+    "@mantine/core": "^7.13.5",
+    "@mantine/hooks": "^7.13.5",
+    "@tanstack/react-query": "^5",
+    "drupal-jsonapi-params": "^2"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^15",
+    "vitest": "^2",
+    "@vitejs/plugin-react": "^4",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/jest-dom": "^6",
+    "jsdom": "^25",
+    "@playwright/test": "^1.49"
+  }
+}

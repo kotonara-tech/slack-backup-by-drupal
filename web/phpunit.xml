@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  slack_portal 用 PHPUnit 設定（web/core/phpunit.xml.dist の最小カスタム版）。
+  testsuites は slack_portal のテストに限定。実行例: ddev exec vendor/bin/phpunit -c web/phpunit.xml (testsuite Unit,Kernel)
+  env はローカル(DDEV)既定。Kernel/Functional は DB / BASE_URL を要する。値は環境に合わせて調整。
+  パスはこのファイル（web/）からの相対。
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
+         bootstrap="core/tests/bootstrap.php"
+         cacheDirectory=".phpunit.cache"
+         colors="true"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         beStrictAboutOutputDuringTests="true"
+         failOnWarning="true"
+         failOnDeprecation="false"
+         displayDetailsOnTestsThatTriggerDeprecations="true">
+  <php>
+    <ini name="error_reporting" value="-1"/>
+    <ini name="memory_limit" value="-1"/>
+    <env name="SIMPLETEST_DB" value="mysql://db:db@db/db"/> <!-- pragma: allowlist secret (DDEV 既定の DB 認証) -->
+    <env name="SIMPLETEST_BASE_URL" value="http://web"/>
+    <env name="BROWSERTEST_OUTPUT_DIRECTORY" value="sites/simpletest/browser_output"/>
+    <env name="SYMFONY_DEPRECATIONS_HELPER" value="weak"/>
+  </php>
+  <testsuites>
+    <testsuite name="Unit">
+      <directory>modules/custom/slack_portal/tests/src/Unit</directory>
+    </testsuite>
+    <testsuite name="Kernel">
+      <directory>modules/custom/slack_portal/tests/src/Kernel</directory>
+    </testsuite>
+    <testsuite name="Functional">
+      <directory>modules/custom/slack_portal/tests/src/Functional</directory>
+    </testsuite>
+  </testsuites>
+</phpunit>

@@ -1,0 +1,8 @@
+{
+  "_comment": "個人ローカル上書きの雛形。コピーして settings.local.json を作る（settings.local.json は gitignore 推奨）。例: 追加の allow や MCP。",
+  "permissions": {
+    "allow": [
+      "WebSearch"
+    ]
+  }
+}

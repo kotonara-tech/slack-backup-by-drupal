@@ -63,3 +63,48 @@
 /drush
 /drupal.phar
 /drupal
+
+# --- slack-backup-by-drupal additions ---
+
+# Secrets / env（.env.example のみ追跡）
+.env
+.env.*
+!.env.example
+/web/sites/*/settings.local.php
+
+# Slack canonical archive（PII/トークンを含みうる恒久バックアップ。絶対に追跡しない）
+/web/sites/*/files/slack_archive
+/slack_archive
+**/slack_archive/
+
+# DDEV（生成物。config.yaml は追跡する）
+/.ddev/.dbimageBuild
+/.ddev/.ddev-docker-*.yaml
+/.ddev/.global_commands
+/.ddev/db_snapshots
+/.ddev/sequelace
+/.ddev/import-db
+/.ddev/providers
+
+# PHP tooling caches（web/phpunit.xml は我々の設定なので追跡する）
+.phpunit.cache
+.phpunit.result.cache
+/web/sites/simpletest
+
+# Frontend (Next.js / Node)
+/frontend/node_modules
+/frontend/next-env.d.ts
+/frontend/*.tsbuildinfo
+/frontend/.next
+/frontend/out
+/frontend/coverage
+/frontend/playwright-report
+/frontend/test-results
+/frontend/.env.local
+
+# OS / editor
+.DS_Store
+*.log
+
+/.editorconfig
+/.gitattributes

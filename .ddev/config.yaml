@@ -1,0 +1,12 @@
+name: slack-backup-by-drupal
+type: drupal11
+docroot: web
+php_version: "8.3"
+webserver_type: nginx-fpm
+database:
+  type: mariadb
+  version: "10.11"
+nodejs_version: "22"
+corepack_enable: false
+# CORS（frontend origin）の許可は Drupal 側（services.yml / settings.local.php の cors.config）で行う。
+# Slack トークンは committed config に置かない（Drupal Key / settings.local.php / .env）。

@@ -1,0 +1,8 @@
+# mglaman/phpstan-drupal と phpstan-deprecation-rules は phpstan/extension-installer が
+# 自動ロードするため、ここで includes しない（二重 include を避ける）。
+parameters:
+  level: 5
+  paths:
+    - web/modules/custom/slack_portal
+  excludePaths:
+    - web/modules/custom/slack_portal/tests/fixtures/*
