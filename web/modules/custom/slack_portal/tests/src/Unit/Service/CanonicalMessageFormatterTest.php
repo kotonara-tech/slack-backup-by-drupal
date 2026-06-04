@@ -48,7 +48,7 @@ class CanonicalMessageFormatterTest extends UnitTestCase {
    */
   public function testFullUserMessageMapsAllCanonicalFields(): void {
     // Arrange: ts=1700000000.000100 → integer part=1700000000
-    // gmdate('Y-m-d\TH:i:s\Z', 1700000000) = '2023-11-14T22:13:20Z'
+    // gmdate('Y-m-d\TH:i:s\Z', 1700000000) = '2023-11-14T22:13:20Z'.
     $raw = [
       'ts'          => '1700000000.000100',
       'user'        => 'U1',
@@ -176,7 +176,7 @@ class CanonicalMessageFormatterTest extends UnitTestCase {
       'text'      => 'great job',
       'reactions' => [
         ['name' => 'tada', 'count' => 2, 'users' => ['U1', 'U2']],
-        ['name' => '+1',   'count' => 1, 'users' => ['U3']],
+        ['name' => '+1', 'count' => 1, 'users' => ['U3']],
       ],
     ];
 
@@ -186,15 +186,19 @@ class CanonicalMessageFormatterTest extends UnitTestCase {
     // Assert: canonical reactions from format().
     $this->assertCount(2, $result['reactions']);
     $this->assertSame(['name' => 'tada', 'count' => 2, 'users' => ['U1', 'U2']], $result['reactions'][0]);
-    $this->assertSame(['name' => '+1',   'count' => 1, 'users' => ['U3']],       $result['reactions'][1]);
+    $this->assertSame(['name' => '+1', 'count' => 1, 'users' => ['U3']], $result['reactions'][1]);
 
     // Also verify formatReactions() in isolation.
     $reactionsDirect = $this->formatter->formatReactions($raw);
-    $this->assertSame($result['reactions'], $reactionsDirect, 'formatReactions() must return the same result as the reactions key in format().');
+    $this->assertSame(
+      $result['reactions'],
+      $reactionsDirect,
+      'formatReactions() must return the same result as the reactions key in format().',
+    );
   }
 
   /**
-   * Tests that formatReactions returns an empty array when reactions key is absent.
+   * Tests that formatReactions returns [] when reactions key is absent.
    *
    * Given a raw message without a reactions key,
    * When formatReactions() is called,

@@ -6,3 +6,6 @@ services:
 
   slack_portal.cursor_iterator:
     class: Drupal\slack_portal\Service\CursorIterator
+
+  slack_portal.message_formatter:
+    class: Drupal\slack_portal\Service\CanonicalMessageFormatter
