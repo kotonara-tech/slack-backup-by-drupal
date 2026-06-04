@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch: # 手動実行で backend-e2e / frontend-e2e を強制発火
 
+# dorny/paths-filter は pull_request で GitHub API(listFiles) を使うため pull-requests:read が必要。
+permissions:
+  contents: read
+  pull-requests: read
+
 # テストピラミッド順。重い E2E (large) はパスフィルタで条件発火。
 jobs:
   changes:
