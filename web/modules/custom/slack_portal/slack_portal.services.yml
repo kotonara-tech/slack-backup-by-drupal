@@ -1,3 +1,5 @@
 # Slack Portal のサービス定義。
 # SlackClientFactory / SlackFetcher / CanonicalJsonWriter 等は Milestone 1 で TDD により追加する。
-services: {}
+services:
+  slack_portal.client_factory:
+    class: Drupal\slack_portal\Service\SlackClientFactory

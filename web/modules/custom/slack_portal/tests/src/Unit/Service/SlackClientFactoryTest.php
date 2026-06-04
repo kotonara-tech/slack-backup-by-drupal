@@ -29,6 +29,18 @@ use PHPUnit\Framework\Attributes\Group;
 class SlackClientFactoryTest extends UnitTestCase {
 
   /**
+   * Fake Slack user token used only in tests (never a real credential).
+   *
+   * The value is a test-only placeholder; the pragma on the const line
+   * prevents detect-secrets and check_no_archive_committed.sh from flagging
+   * it as a real credential.
+   *
+   * @var string
+   */
+  // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar,DrupalPractice.Commenting.CommentEmptyLine.SpacingAfter
+  private const TEST_TOKEN = 'xoxp-test-token'; // pragma: allowlist secret
+
+  /**
    * Tests that createWithHandler returns a JoliCode Slack API Client instance.
    *
    * Given a MockHandler and a token,
@@ -43,18 +55,17 @@ class SlackClientFactoryTest extends UnitTestCase {
     $guzzle = new GuzzleClient(['handler' => $stack]);
 
     $factory = new SlackClientFactory();
-    $token = 'xoxp-test-token'; // pragma: allowlist secret
-    $client = $factory->createWithHandler($guzzle, $token);
+    $client = $factory->createWithHandler($guzzle, self::TEST_TOKEN);
 
     $this->assertInstanceOf(SlackApiClient::class, $client);
   }
 
   /**
-   * Tests that requests carry the Bearer Authorization header and target slack.com.
+   * Tests requests carry the Bearer Authorization header and target slack.com.
    *
    * Given a MockHandler queued with a successful response,
    * When the client built by createWithHandler() invokes conversationsList(),
-   * Then the captured request has Authorization: Bearer <token> and host slack.com.
+   * Then the request has Authorization: Bearer <token> and host slack.com.
    */
   public function testRequestHasBearerAuthorizationAndSlackHost(): void {
     $mock = new MockHandler([
@@ -64,8 +75,7 @@ class SlackClientFactoryTest extends UnitTestCase {
     $guzzle = new GuzzleClient(['handler' => $stack]);
 
     $factory = new SlackClientFactory();
-    $token = 'xoxp-test-token'; // pragma: allowlist secret
-    $client = $factory->createWithHandler($guzzle, $token);
+    $client = $factory->createWithHandler($guzzle, self::TEST_TOKEN);
 
     // Invoke an API endpoint to trigger an HTTP request.
     $client->conversationsList();
@@ -73,7 +83,7 @@ class SlackClientFactoryTest extends UnitTestCase {
     $lastRequest = $mock->getLastRequest();
     $this->assertNotNull($lastRequest, 'A request must have been captured by the MockHandler.');
     $this->assertSame(
-      'Bearer xoxp-test-token', // pragma: allowlist secret
+      'Bearer ' . self::TEST_TOKEN,
       $lastRequest->getHeaderLine('Authorization'),
       'Authorization header must contain the Bearer token.'
     );
