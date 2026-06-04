@@ -29,7 +29,6 @@ use Psr\Log\LoggerInterface;
  *
  * Methods NOT implemented here (belong to later ToDos):
  *   - fetchReplies: single conversations.replies call (A7)
- *   - fetchFiles: files.list paginates by page NUMBER, not cursor (A10)
  */
 final class SlackFetcher {
 
@@ -115,6 +114,51 @@ final class SlackFetcher {
     };
 
     yield from $this->yieldPages($pageFetcher);
+  }
+
+  /**
+   * Fetches all files via page-number-paginated files.list.
+   *
+   * Unlike conversations.*, files.list does NOT use cursor pagination.
+   * Instead the response includes a "paging" object with page/pages keys.
+   * This method requests page 1, yields its files, then increments the page
+   * number until page >= pages (or the files array is empty).
+   *
+   * The jolicode endpoint accepts count/page/ts_from as strings.
+   *
+   * @param \JoliCode\Slack\Api\Client $client
+   *   A configured Slack API client (already built by SlackClientFactory).
+   * @param int|null $tsFrom
+   *   Optional Unix timestamp; only files created after this time are returned.
+   *   Pass NULL to retrieve all available files.
+   *
+   * @return \Generator<int, array<string, mixed>>
+   *   Yields each file array from the response.
+   */
+  public function fetchFiles(SlackApiClient $client, ?int $tsFrom = NULL): \Generator {
+    $this->logger->debug('Fetching files.');
+
+    $page = 1;
+    $totalPages = 1;
+    do {
+      $params = ['count' => '200', 'page' => (string) $page];
+      if ($tsFrom !== NULL) {
+        $params['ts_from'] = (string) $tsFrom;
+      }
+      /** @var \Psr\Http\Message\ResponseInterface $response */
+      $response = $client->filesList($params, SlackApiClient::FETCH_RESPONSE);
+      /** @var array<string, mixed> $data */
+      $data = json_decode((string) $response->getBody(), TRUE) ?? [];
+      /** @var array<int, array<string, mixed>> $files */
+      $files = $data['files'] ?? [];
+      foreach ($files as $file) {
+        yield $file;
+      }
+      /** @var array<string, int> $paging */
+      $paging = $data['paging'] ?? [];
+      $totalPages = (int) ($paging['pages'] ?? 1);
+      $page++;
+    } while ($page <= $totalPages && $files !== []);
   }
 
   /**

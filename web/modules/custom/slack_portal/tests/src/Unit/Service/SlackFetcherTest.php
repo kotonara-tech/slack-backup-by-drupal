@@ -212,7 +212,7 @@ class SlackFetcherTest extends UnitTestCase {
     $historyMiddleware = Middleware::history($history);
     $stack = HandlerStack::create($mock);
     $stack->push($historyMiddleware, 'history');
-    // phpcs:ignore Drupal.Commenting.InlineComment.InvalidEndChar
+    // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar,DrupalPractice.Commenting.CommentEmptyLine.SpacingAfter,Drupal.Files.LineLength.TooLong
     $client = (new SlackClientFactory())->createWithHandler($stack, self::TEST_TOKEN); // pragma: allowlist secret
 
     $fetcher = new SlackFetcher(new CursorIterator(), new NullLogger());
