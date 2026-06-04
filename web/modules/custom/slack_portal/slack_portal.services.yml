@@ -24,3 +24,7 @@ services:
   slack_portal.file_downloader:
     class: Drupal\slack_portal\Service\SlackFileDownloader
     arguments: ['@http_client', '@file_system', '@logger.channel.slack_portal']
+
+  slack_portal.json_writer:
+    class: Drupal\slack_portal\Service\CanonicalJsonWriter
+    arguments: ['@file_system', '@logger.channel.slack_portal']

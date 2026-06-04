@@ -62,7 +62,7 @@ class CanonicalJsonWriterTest extends KernelTestBase {
   }
 
   /**
-   * Tests that writeChannel produces valid, round-trippable JSON at the expected path.
+   * Tests that writeChannel produces valid, round-trippable JSON.
    *
    * Given channel metadata and folded messages,
    * When writeChannel() is called,
@@ -109,7 +109,7 @@ class CanonicalJsonWriterTest extends KernelTestBase {
   }
 
   /**
-   * Tests that calling writeChannel twice with identical input is byte-identical (idempotent).
+   * Tests that writeChannel is byte-identical on re-run (idempotent).
    *
    * Given the same channel metadata and messages,
    * When writeChannel() is called twice,
@@ -136,17 +136,26 @@ class CanonicalJsonWriterTest extends KernelTestBase {
     // Re-read after second write.
     $realPath2 = $this->fileSystem->realpath($uri2);
     $content2 = file_get_contents((string) $realPath2);
-    $this->assertSame($content1, $content2, 'File content must be byte-identical across re-runs.');
+    $this->assertSame(
+      $content1,
+      $content2,
+      'File content must be byte-identical across re-runs.',
+    );
 
-    // Assert: no duplicate file (e.g. C123_0.json) exists alongside the original.
-    $channelDir = $this->fileSystem->realpath('public://slack_archive/latest/channels');
+    // Assert: no duplicate file (e.g. C123_0.json) exists.
+    $channelDir = $this->fileSystem->realpath(
+      'public://slack_archive/latest/channels',
+    );
     $this->assertNotFalse($channelDir, 'channels directory must exist.');
     $duplicatePath = $channelDir . '/C123_0.json';
-    $this->assertFileDoesNotExist($duplicatePath, 'No rename-on-conflict duplicate must be created.');
+    $this->assertFileDoesNotExist(
+      $duplicatePath,
+      'No rename-on-conflict duplicate must be created.',
+    );
   }
 
   /**
-   * Tests that writeUsers and writeManifest produce valid JSON at expected paths.
+   * Tests that writeUsers and writeManifest produce valid JSON.
    *
    * Given a list of users and a manifest array,
    * When writeUsers() and writeManifest() are called,
