@@ -191,4 +191,76 @@ class SlackFetcherTest extends UnitTestCase {
     $this->assertSame('C9', $queryParams['channel'] ?? NULL, 'channel query param must be set.');
   }
 
+  /**
+   * Tests fetchFiles paginates across 2 pages using page-number pagination.
+   *
+   * Given a MockHandler queued with:
+   *   - page 1: 200 with files [id:F1, id:F2], paging{page:1, pages:2}
+   *   - page 2: 200 with files [id:F3], paging{page:2, pages:2}
+   * When fetchFiles() is iterated to completion,
+   * Then all 3 file ids are returned,
+   * And the MockHandler is empty (both pages fetched),
+   * And the 2nd request carries page=2 in the query string.
+   */
+  public function testFetchFilesPaginatesByPageNumber(): void {
+    $history = [];
+    $mock = new MockHandler([
+      new Response(200, [], '{"ok":true,"files":[{"id":"F1"},{"id":"F2"}],"paging":{"count":2,"total":3,"page":1,"pages":2}}'),
+      new Response(200, [], '{"ok":true,"files":[{"id":"F3"}],"paging":{"count":2,"total":3,"page":2,"pages":2}}'),
+    ]);
+
+    $historyMiddleware = Middleware::history($history);
+    $stack = HandlerStack::create($mock);
+    $stack->push($historyMiddleware, 'history');
+    // phpcs:ignore Drupal.Commenting.InlineComment.InvalidEndChar
+    $client = (new SlackClientFactory())->createWithHandler($stack, self::TEST_TOKEN); // pragma: allowlist secret
+
+    $fetcher = new SlackFetcher(new CursorIterator(), new NullLogger());
+
+    $files = [];
+    foreach ($fetcher->fetchFiles($client, NULL) as $file) {
+      $files[] = $file;
+    }
+
+    // All 3 file ids returned.
+    $this->assertCount(3, $files, 'All 3 files from 2 pages must be yielded.');
+    $this->assertSame('F1', $files[0]['id']);
+    $this->assertSame('F2', $files[1]['id']);
+    $this->assertSame('F3', $files[2]['id']);
+
+    // Both pages fetched — MockHandler exhausted.
+    $this->assertCount(0, $mock, 'Both responses must be consumed.');
+
+    // The 2nd request must carry page=2 in the query string.
+    $this->assertCount(2, $history, 'Exactly 2 requests must have been recorded.');
+    parse_str($history[1]['request']->getUri()->getQuery(), $queryParams);
+    $this->assertSame('2', $queryParams['page'] ?? NULL, 'Second request must carry page=2.');
+  }
+
+  /**
+   * Tests fetchFiles with a single page makes exactly one request.
+   *
+   * Given a MockHandler with one page where paging.pages=1,
+   * When fetchFiles() is iterated,
+   * Then files from that single page are returned and the MockHandler is empty.
+   */
+  public function testFetchFilesSinglePageYieldsOnce(): void {
+    $mock = new MockHandler([
+      new Response(200, [], '{"ok":true,"files":[{"id":"F10"},{"id":"F11"}],"paging":{"count":2,"total":2,"page":1,"pages":1}}'),
+    ]);
+
+    $client = $this->buildClient($mock);
+    $fetcher = new SlackFetcher(new CursorIterator(), new NullLogger());
+
+    $files = [];
+    foreach ($fetcher->fetchFiles($client, 1700000000) as $file) {
+      $files[] = $file;
+    }
+
+    $this->assertCount(2, $files, 'Both files from single page must be yielded.');
+    $this->assertSame('F10', $files[0]['id']);
+    $this->assertSame('F11', $files[1]['id']);
+    $this->assertCount(0, $mock, 'The single response must be consumed.');
+  }
+
 }
