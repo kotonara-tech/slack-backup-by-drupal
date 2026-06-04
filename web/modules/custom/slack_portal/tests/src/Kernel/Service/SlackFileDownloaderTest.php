@@ -47,7 +47,7 @@ class SlackFileDownloaderTest extends KernelTestBase {
    *
    * @var string
    */
-  // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
+  // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar,DrupalPractice.Commenting.CommentEmptyLine.SpacingAfter
   private const TEST_TOKEN = 'xoxp-test-token'; // pragma: allowlist secret
 
   /**
@@ -68,7 +68,7 @@ class SlackFileDownloaderTest extends KernelTestBase {
   }
 
   /**
-   * Builds a Guzzle client with MockHandler and optional history middleware.
+   * Builds a Guzzle client with MockHandler and a history middleware.
    *
    * @param \GuzzleHttp\Handler\MockHandler $mock
    *   The mock handler to drive.
@@ -80,13 +80,7 @@ class SlackFileDownloaderTest extends KernelTestBase {
    */
   private function buildGuzzleClient(MockHandler $mock, array &$history = []): Client {
     $stack = HandlerStack::create($mock);
-    if ($history !== []) {
-      $stack->push(Middleware::history($history), 'history');
-    }
-    else {
-      // Always attach history so we can inspect it, even if passed empty array.
-      $stack->push(Middleware::history($history), 'history');
-    }
+    $stack->push(Middleware::history($history), 'history');
     return new Client(['handler' => $stack]);
   }
 
@@ -96,8 +90,8 @@ class SlackFileDownloaderTest extends KernelTestBase {
    * Given a MockHandler queued with a 200 response body 'PNGDATA',
    * When download() is called with a url_private, token, and dest stream URI,
    * Then the file exists on disk with content 'PNGDATA',
-   * And the outgoing HTTP request used GET with an Authorization: Bearer header,
-   * And the method returns the destination stream URI.
+   * And the outgoing HTTP request used GET with an Authorization: Bearer
+   * header, and the method returns the destination stream URI.
    */
   public function testStreamsFileToDiskWithBearer(): void {
     // Arrange.
@@ -106,7 +100,11 @@ class SlackFileDownloaderTest extends KernelTestBase {
       new Response(200, [], 'PNGDATA'),
     ]);
     $httpClient = $this->buildGuzzleClient($mock, $history);
-    $downloader = new SlackFileDownloader($httpClient, $this->fileSystem, new NullLogger());
+    $downloader = new SlackFileDownloader(
+      $httpClient,
+      $this->fileSystem,
+      new NullLogger(),
+    );
 
     $destUri = 'public://slack_archive/latest/files/F1.png';
     $urlPrivate = 'https://files.slack.com/files-pri/T1/F1.png';
@@ -115,21 +113,44 @@ class SlackFileDownloaderTest extends KernelTestBase {
     $result = $downloader->download($urlPrivate, self::TEST_TOKEN, $destUri);
 
     // Assert: return value is the destination URI.
-    $this->assertSame($destUri, $result, 'download() must return the destination stream URI.');
+    $this->assertSame(
+      $destUri,
+      $result,
+      'download() must return the destination stream URI.',
+    );
 
     // Assert: file exists on disk with expected content.
     $realPath = $this->fileSystem->realpath($destUri);
-    $this->assertNotFalse($realPath, 'realpath() must resolve the public:// URI after download.');
-    $this->assertFileExists((string) $realPath, 'Downloaded file must exist on disk.');
-    $this->assertSame('PNGDATA', file_get_contents((string) $realPath), 'File content must match the mock response body.');
+    $this->assertNotFalse(
+      $realPath,
+      'realpath() must resolve the public:// URI after download.',
+    );
+    $this->assertFileExists(
+      (string) $realPath,
+      'Downloaded file must exist on disk.',
+    );
+    $this->assertSame(
+      'PNGDATA',
+      file_get_contents((string) $realPath),
+      'File content must match the mock response body.',
+    );
 
     // Assert: the request used GET with Bearer Authorization.
-    $this->assertCount(1, $history, 'Exactly one HTTP request must have been made.');
+    $this->assertCount(
+      1,
+      $history,
+      'Exactly one HTTP request must have been made.',
+    );
     $request = $history[0]['request'];
     $this->assertSame('GET', $request->getMethod(), 'HTTP method must be GET.');
-    $this->assertSame($urlPrivate, (string) $request->getUri(), 'Request URL must match url_private.');
     $this->assertSame(
-      'Bearer ' . self::TEST_TOKEN, // pragma: allowlist secret
+      $urlPrivate,
+      (string) $request->getUri(),
+      'Request URL must match url_private.',
+    );
+    $expectedAuth = 'Bearer ' . self::TEST_TOKEN;
+    $this->assertSame(
+      $expectedAuth,
       $request->getHeaderLine('Authorization'),
       'Authorization header must contain Bearer token.',
     );
@@ -141,7 +162,7 @@ class SlackFileDownloaderTest extends KernelTestBase {
    * Given a destination file already exists with content 'EXISTING' (8 bytes),
    * When download() is called with expectedSize=8 and a MockHandler that would
    * fail if invoked (empty queue),
-   * Then no HTTP request is made (MockHandler remains full/empty/unchanged),
+   * Then no HTTP request is made (MockHandler remains unchanged),
    * And the method returns the destination stream URI unchanged.
    */
   public function testSkipsDownloadWhenFileExistsWithMatchingSize(): void {
@@ -150,33 +171,57 @@ class SlackFileDownloaderTest extends KernelTestBase {
     $existingContent = 'EXISTING';
 
     $dir = dirname($destUri);
-    $this->fileSystem->prepareDirectory($dir, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
-    $realPath = $this->fileSystem->realpath($dir) . '/' . basename($destUri);
+    $this->fileSystem->prepareDirectory(
+      $dir,
+      FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS,
+    );
+    $dirRealPath = $this->fileSystem->realpath($dir);
+    $realPath = $dirRealPath . '/' . basename($destUri);
     file_put_contents($realPath, $existingContent);
 
     // An empty MockHandler — any request attempt would throw an exception.
     $mock = new MockHandler([]);
     $history = [];
     $httpClient = $this->buildGuzzleClient($mock, $history);
-    $downloader = new SlackFileDownloader($httpClient, $this->fileSystem, new NullLogger());
+    $downloader = new SlackFileDownloader(
+      $httpClient,
+      $this->fileSystem,
+      new NullLogger(),
+    );
 
     // Act.
     $result = $downloader->download(
       'https://files.slack.com/files-pri/T1/F2.png',
-      self::TEST_TOKEN, // pragma: allowlist secret
+      self::TEST_TOKEN,
       $destUri,
       expectedSize: strlen($existingContent),
     );
 
     // Assert: no HTTP request was made (idempotency).
-    $this->assertCount(0, $history, 'No HTTP request must be made when file already exists with matching size.');
-    $this->assertCount(0, $mock, 'MockHandler must remain empty (no requests consumed).');
+    $this->assertCount(
+      0,
+      $history,
+      'No HTTP request must be made when file already exists with matching size.',
+    );
+    $this->assertCount(
+      0,
+      $mock,
+      'MockHandler must remain empty (no requests consumed).',
+    );
 
     // Assert: return value is still the destination URI.
-    $this->assertSame($destUri, $result, 'download() must return the destination stream URI on skip.');
+    $this->assertSame(
+      $destUri,
+      $result,
+      'download() must return the destination stream URI on skip.',
+    );
 
     // Assert: the existing file was not modified.
-    $this->assertSame($existingContent, file_get_contents($realPath), 'Existing file content must be preserved on skip.');
+    $this->assertSame(
+      $existingContent,
+      file_get_contents($realPath),
+      'Existing file content must be preserved on skip.',
+    );
   }
 
 }

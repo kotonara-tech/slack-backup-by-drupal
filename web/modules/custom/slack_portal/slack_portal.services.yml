@@ -20,3 +20,7 @@ services:
   slack_portal.fetcher:
     class: Drupal\slack_portal\Service\SlackFetcher
     arguments: ['@slack_portal.cursor_iterator', '@logger.channel.slack_portal']
+
+  slack_portal.file_downloader:
+    class: Drupal\slack_portal\Service\SlackFileDownloader
+    arguments: ['@http_client', '@file_system', '@logger.channel.slack_portal']
