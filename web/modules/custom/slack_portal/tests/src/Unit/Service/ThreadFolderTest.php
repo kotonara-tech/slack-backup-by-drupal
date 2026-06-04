@@ -36,10 +36,6 @@ class ThreadFolderTest extends UnitTestCase {
     $this->folder = new ThreadFolder();
   }
 
-  // ---------------------------------------------------------------------------
-  // Fixture helpers
-  // ---------------------------------------------------------------------------
-
   /**
    * Returns a minimal canonical message array.
    *
@@ -51,6 +47,7 @@ class ThreadFolderTest extends UnitTestCase {
    *   Optional text to distinguish messages in assertions.
    *
    * @return array<string,mixed>
+   *   A minimal canonical message array with slack_ts, thread_ts, text.
    */
   private function msg(string $slackTs, ?string $threadTs, string $text = ''): array {
     return [
@@ -60,15 +57,11 @@ class ThreadFolderTest extends UnitTestCase {
     ];
   }
 
-  // ---------------------------------------------------------------------------
-  // Test 1: Basic fold
-  // ---------------------------------------------------------------------------
-
   /**
    * Tests basic folding: parent gets replies, standalone is untouched.
    *
    * Given a thread parent (slack_ts == thread_ts), two replies pointing at it,
-   * and one standalone message (thread_ts == null),
+   * and one standalone message (thread_ts == NULL),
    * When fold() is called,
    * Then: top-level count == 2 (parent + standalone),
    *   parent's replies array contains exactly the two reply messages in
@@ -81,7 +74,7 @@ class ThreadFolderTest extends UnitTestCase {
     $parent = $this->msg('1.0', '1.0', 'parent');
     $reply1 = $this->msg('2.0', '1.0', 'reply1');
     $reply2 = $this->msg('3.0', '1.0', 'reply2');
-    $standalone = $this->msg('9.0', null, 'standalone');
+    $standalone = $this->msg('9.0', NULL, 'standalone');
 
     // Act.
     $result = $this->folder->fold([$parent, $reply1, $reply2, $standalone]);
@@ -108,10 +101,6 @@ class ThreadFolderTest extends UnitTestCase {
     $this->assertNotContains('3.0', $topLevelTs);
   }
 
-  // ---------------------------------------------------------------------------
-  // Test 2: Reply order
-  // ---------------------------------------------------------------------------
-
   /**
    * Tests that replies provided out of order come out ascending by slack_ts.
    *
@@ -137,16 +126,12 @@ class ThreadFolderTest extends UnitTestCase {
     $this->assertSame('3.0', $replies[1]['slack_ts']);
   }
 
-  // ---------------------------------------------------------------------------
-  // Test 3: Orphan reply
-  // ---------------------------------------------------------------------------
-
   /**
    * Tests that an orphan reply (no matching parent) surfaces at top level.
    *
    * Given a reply whose thread_ts has no matching parent message in the input,
    * When fold() is called,
-   * Then the orphan reply appears at top level so that no data is silently lost.
+   * Then the orphan reply appears at top level so data is never silently lost.
    */
   public function testOrphanReplyIsPreservedAtTopLevel(): void {
     // Arrange: no parent with slack_ts == '4.0'.
@@ -160,14 +145,10 @@ class ThreadFolderTest extends UnitTestCase {
     $this->assertSame('5.0', $result[0]['slack_ts']);
   }
 
-  // ---------------------------------------------------------------------------
-  // Test 4: No threads — standalones pass through unchanged
-  // ---------------------------------------------------------------------------
-
   /**
-   * Tests that all-standalone input passes through with no 'replies' keys added.
+   * Tests all-standalone input passes through with no 'replies' keys added.
    *
-   * Given a list of messages where every message has thread_ts == null,
+   * Given a list of messages where every message has thread_ts == NULL,
    * When fold() is called,
    * Then the output is identical in count and content,
    * and no 'replies' key is added to any message.
@@ -175,9 +156,9 @@ class ThreadFolderTest extends UnitTestCase {
   public function testAllStandaloneMessagesAreReturnedUnchanged(): void {
     // Arrange.
     $messages = [
-      $this->msg('1.0', null, 'msg1'),
-      $this->msg('2.0', null, 'msg2'),
-      $this->msg('3.0', null, 'msg3'),
+      $this->msg('1.0', NULL, 'msg1'),
+      $this->msg('2.0', NULL, 'msg2'),
+      $this->msg('3.0', NULL, 'msg3'),
     ];
 
     // Act.
@@ -190,14 +171,10 @@ class ThreadFolderTest extends UnitTestCase {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Test 5: Input array is not mutated (extra assertion per Green requirement)
-  // ---------------------------------------------------------------------------
-
   /**
    * Tests that the original input array is not mutated by fold().
    *
-   * Given a parent with two replies,
+   * Given a parent with one reply,
    * When fold() is called,
    * Then the original input messages retain their original structure
    * (no 'replies' key added to the original parent element).
