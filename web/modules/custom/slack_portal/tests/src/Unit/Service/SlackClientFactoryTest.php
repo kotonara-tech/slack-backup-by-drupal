@@ -109,7 +109,7 @@ class SlackClientFactoryTest extends UnitTestCase {
     // Should not throw — retry middleware must intercept the 429 and re-send.
     $result = $client->conversationsList();
 
-    $this->assertSame(0, $mock->count(), 'Both responses must be consumed, confirming the 429 was retried.');
+    $this->assertCount(0, $mock, 'Both responses must be consumed, confirming the 429 was retried.');
     $this->assertNotNull($result, 'A successful result must be returned after retry.');
   }
 
@@ -128,11 +128,10 @@ class SlackClientFactoryTest extends UnitTestCase {
       new Response(200, [], '{"ok":true,"channels":[]}'),
     ]);
 
-    $capturedDelay = null;
+    $capturedDelay = NULL;
 
-    // on_retry_callback signature (from vendor source):
-    // callable(int $retryCount, float $delayTimeout, RequestInterface &$request,
-    //          array &$options, ?ResponseInterface $response, ?Throwable $exception)
+    // on_retry_callback (vendor): (int $count, float $delay,
+    // RequestInterface &$req, array &$opts, ?Response $res, ?Throwable $ex)
     $onRetry = static function (
       int $retryCount,
       float $delayTimeout,
@@ -158,7 +157,7 @@ class SlackClientFactoryTest extends UnitTestCase {
       $capturedDelay,
       'Retry delay must be clamped to max_allowable_timeout_secs (0.001 s).'
     );
-    $this->assertSame(0, $mock->count(), 'Both responses must be consumed.');
+    $this->assertCount(0, $mock, 'Both responses must be consumed.');
   }
 
 }
