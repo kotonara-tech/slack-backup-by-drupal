@@ -1,3 +1,3 @@
 # asdf tool versions（任意。DDEV はコンテナ内で php/composer/drush を提供するため必須ではない）
-# Next.js 15 / React 19 はローカルでこのバージョンの Node で動かす（CI は node 22）。
-nodejs 20.11.0
+# Next.js 15 / React 19 をローカル・CI とも Node 22 で動かす（CI は actions/setup-node node-version: "22"）。
+nodejs 22.22.3

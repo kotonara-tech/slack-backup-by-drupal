@@ -6,47 +6,49 @@ on:
   pull_request:
   workflow_dispatch: # 手動実行で backend-e2e / frontend-e2e を強制発火
 
-# dorny/paths-filter は pull_request で GitHub API(listFiles) を使うため pull-requests:read が必要。
+# changes ジョブが gh(GitHub API) で PR の変更ファイルを取得するため pull-requests:read が必要。
 permissions:
   contents: read
   pull-requests: read
 
-# テストピラミッド順。重い E2E (large) はパスフィルタで条件発火。
+# テストピラミッド順。重い E2E (large) は変更パスで条件発火。
+# アクションは Node24 ネイティブ版を使用（dorny/paths-filter・pre-commit/action は Node20 同梱のため不使用）。
 jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.f.outputs.backend }}
+      frontend: ${{ steps.f.outputs.frontend }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'web/modules/custom/slack_portal/**'
-              - 'composer.json'
-              - 'composer.lock'
-              - 'phpstan.neon'
-              - 'phpcs.xml'
-              - 'web/phpunit.xml'
-            frontend:
-              - 'frontend/**'
+      - name: Detect changed paths (PR のみ。push/dispatch は E2E を無条件実行)
+        id: f
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          backend=false; frontend=false
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            files="$(gh pr diff "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --name-only)"
+            echo "Changed files:"; echo "$files"
+            echo "$files" | grep -Eq '^(web/modules/custom/slack_portal/|composer\.json$|composer\.lock$|phpstan\.neon$|phpcs\.xml$|web/phpunit\.xml$)' && backend=true || true
+            echo "$files" | grep -Eq '^frontend/' && frontend=true || true
+          fi
+          echo "backend=$backend"   >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
 
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - uses: pre-commit/action@v3.0.1
+      - run: python -m pip install --upgrade pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure
 
   drupal-static:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ddev/github-action-setup-ddev@v1
       - run: ddev composer install
       - run: ddev exec vendor/bin/phpstan analyze web/modules/custom/slack_portal -l 5
@@ -55,7 +57,7 @@ jobs:
   drupal-phpunit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ddev/github-action-setup-ddev@v1
       - run: ddev composer install
       - run: test -f web/phpunit.xml || cp web/core/phpunit.xml.dist web/phpunit.xml
@@ -64,8 +66,8 @@ jobs:
   frontend-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -81,7 +83,7 @@ jobs:
     if: needs.changes.outputs.backend == 'true' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ddev/github-action-setup-ddev@v1
       - run: ddev composer install
       - run: test -f web/phpunit.xml || cp web/core/phpunit.xml.dist web/phpunit.xml
@@ -92,8 +94,8 @@ jobs:
     if: needs.changes.outputs.frontend == 'true' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
