@@ -167,4 +167,28 @@ class SlackFetcherTest extends UnitTestCase {
     $this->assertCount(0, $mock, 'The single response must be consumed.');
   }
 
+  /**
+   * Tests fetchHistory passes the oldest parameter in the query string.
+   *
+   * Given a MockHandler with one page and an oldest timestamp,
+   * When fetchHistory() is called with a non-null $oldest,
+   * Then the outgoing request query contains oldest=<value>.
+   */
+  public function testFetchHistoryPassesOldestParam(): void {
+    $history = [];
+    $mock = new MockHandler([
+      new Response(200, [], '{"ok":true,"messages":[{"ts":"9.0"}],"response_metadata":{"next_cursor":""}}'),
+    ]);
+
+    $client = $this->buildClient($mock, $history);
+    $fetcher = new SlackFetcher(new CursorIterator(), new NullLogger());
+
+    iterator_to_array($fetcher->fetchHistory($client, 'C9', 1700000000));
+
+    $this->assertCount(1, $history, 'One request must have been made.');
+    parse_str($history[0]['request']->getUri()->getQuery(), $queryParams);
+    $this->assertSame('1700000000', $queryParams['oldest'] ?? NULL, 'oldest query param must be set.');
+    $this->assertSame('C9', $queryParams['channel'] ?? NULL, 'channel query param must be set.');
+  }
+
 }

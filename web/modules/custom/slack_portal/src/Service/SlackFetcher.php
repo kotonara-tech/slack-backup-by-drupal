@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Drupal\slack_portal\Service;
 
 use JoliCode\Slack\Api\Client as SlackApiClient;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -59,36 +60,30 @@ final class SlackFetcher {
    * @return \Generator<int, array<string, mixed>>
    *   Yields each message array from the response.
    */
-  public function fetchHistory(SlackApiClient $client, string $channelId, ?int $oldest): \Generator {
-    $this->logger->debug('Fetching history for channel {channel}', ['channel' => $channelId]);
+  public function fetchHistory(
+    SlackApiClient $client,
+    string $channelId,
+    ?int $oldest,
+  ): \Generator {
+    $this->logger->debug(
+      'Fetching history for channel {channel}',
+      ['channel' => $channelId],
+    );
 
     $pageFetcher = function (string $cursor) use ($client, $channelId, $oldest): array {
-      $params = [
-        'channel' => $channelId,
-        'limit' => 200,
-      ];
+      $params = ['channel' => $channelId, 'limit' => 200];
       if ($cursor !== '') {
         $params['cursor'] = $cursor;
       }
       if ($oldest !== NULL) {
         $params['oldest'] = (string) $oldest;
       }
-
       /** @var \Psr\Http\Message\ResponseInterface $response */
       $response = $client->conversationsHistory($params, SlackApiClient::FETCH_RESPONSE);
-      $data = json_decode((string) $response->getBody(), TRUE);
-
-      return [
-        'items' => $data['messages'] ?? [],
-        'next_cursor' => $data['response_metadata']['next_cursor'] ?? '',
-      ];
+      return $this->decodePage($response, 'messages');
     };
 
-    foreach ($this->cursor->pages($pageFetcher) as $page) {
-      foreach ($page as $message) {
-        yield $message;
-      }
-    }
+    yield from $this->yieldPages($pageFetcher);
   }
 
   /**
@@ -97,39 +92,29 @@ final class SlackFetcher {
    * @param \JoliCode\Slack\Api\Client $client
    *   A configured Slack API client.
    * @param string $types
-   *   Comma-separated list of channel types to include, e.g.
+   *   Comma-separated channel types, e.g.
    *   'public_channel,private_channel,mpim,im'.
    *
    * @return \Generator<int, array<string, mixed>>
    *   Yields each channel array from the response.
    */
   public function fetchChannels(SlackApiClient $client, string $types): \Generator {
-    $this->logger->debug('Fetching channels of types: {types}', ['types' => $types]);
+    $this->logger->debug(
+      'Fetching channels of types: {types}',
+      ['types' => $types],
+    );
 
     $pageFetcher = function (string $cursor) use ($client, $types): array {
-      $params = [
-        'types' => $types,
-        'limit' => 200,
-      ];
+      $params = ['types' => $types, 'limit' => 200];
       if ($cursor !== '') {
         $params['cursor'] = $cursor;
       }
-
       /** @var \Psr\Http\Message\ResponseInterface $response */
       $response = $client->conversationsList($params, SlackApiClient::FETCH_RESPONSE);
-      $data = json_decode((string) $response->getBody(), TRUE);
-
-      return [
-        'items' => $data['channels'] ?? [],
-        'next_cursor' => $data['response_metadata']['next_cursor'] ?? '',
-      ];
+      return $this->decodePage($response, 'channels');
     };
 
-    foreach ($this->cursor->pages($pageFetcher) as $page) {
-      foreach ($page as $channel) {
-        yield $channel;
-      }
-    }
+    yield from $this->yieldPages($pageFetcher);
   }
 
   /**
@@ -149,20 +134,53 @@ final class SlackFetcher {
       if ($cursor !== '') {
         $params['cursor'] = $cursor;
       }
-
       /** @var \Psr\Http\Message\ResponseInterface $response */
       $response = $client->usersList($params, SlackApiClient::FETCH_RESPONSE);
-      $data = json_decode((string) $response->getBody(), TRUE);
-
-      return [
-        'items' => $data['members'] ?? [],
-        'next_cursor' => $data['response_metadata']['next_cursor'] ?? '',
-      ];
+      return $this->decodePage($response, 'members');
     };
 
+    yield from $this->yieldPages($pageFetcher);
+  }
+
+  /**
+   * Decodes a FETCH_RESPONSE body and extracts items + next_cursor.
+   *
+   * SlackErrorPlugin reads the PSR-7 stream with getContents(), leaving the
+   * pointer at EOF. Casting to string via (string) calls Stream::__toString,
+   * which rewinds the seekable stream before reading, so the JSON is intact.
+   *
+   * @param \Psr\Http\Message\ResponseInterface $response
+   *   A raw PSR-7 response obtained via FETCH_RESPONSE mode.
+   * @param string $itemsKey
+   *   The top-level JSON key that holds the items array
+   *   (e.g. 'messages', 'channels', 'members').
+   *
+   * @return array{items: array<int, array<string, mixed>>, next_cursor: string}
+   *   Associative array with 'items' and 'next_cursor' keys, as expected by
+   *   CursorIterator::pages().
+   */
+  private function decodePage(ResponseInterface $response, string $itemsKey): array {
+    /** @var array<string, mixed> $data */
+    $data = json_decode((string) $response->getBody(), TRUE) ?? [];
+    return [
+      'items' => $data[$itemsKey] ?? [],
+      'next_cursor' => $data['response_metadata']['next_cursor'] ?? '',
+    ];
+  }
+
+  /**
+   * Iterates cursor pages and yields each item individually.
+   *
+   * @param callable(string): array{items: array<int,mixed>, next_cursor?: string} $pageFetcher
+   *   A closure matching the CursorIterator::pages() contract.
+   *
+   * @return \Generator<int, array<string, mixed>>
+   *   Yields each item from every page.
+   */
+  private function yieldPages(callable $pageFetcher): \Generator {
     foreach ($this->cursor->pages($pageFetcher) as $page) {
-      foreach ($page as $user) {
-        yield $user;
+      foreach ($page as $item) {
+        yield $item;
       }
     }
   }
