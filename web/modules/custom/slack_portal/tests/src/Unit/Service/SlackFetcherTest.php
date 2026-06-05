@@ -325,4 +325,27 @@ class SlackFetcherTest extends UnitTestCase {
     $this->assertSame([], $replies, 'No replies must return an empty array.');
   }
 
+  /**
+   * Tests fetchReplies tolerates a message that lacks a top-level 'ts'.
+   *
+   * The parent-exclusion filter must not raise an undefined-key warning for a
+   * message with no 'ts'; such a message is treated as a non-parent reply.
+   */
+  public function testFetchRepliesToleratesMessageWithoutTs(): void {
+    $mock = new MockHandler([
+      new Response(200, [], '{"ok":true,"messages":[{"ts":"1.0","thread_ts":"1.0","text":"parent"},{"thread_ts":"1.0","text":"no-ts"}]}'),
+    ]);
+
+    $client = $this->buildClient($mock);
+    $fetcher = new SlackFetcher(new CursorIterator(), new NullLogger());
+
+    // When.
+    $replies = $fetcher->fetchReplies($client, 'C1', '1.0');
+
+    // Then: the parent is excluded and the ts-less message is retained,
+    // with no undefined-array-key warning raised.
+    $this->assertCount(1, $replies);
+    $this->assertSame('no-ts', $replies[0]['text']);
+  }
+
 }
