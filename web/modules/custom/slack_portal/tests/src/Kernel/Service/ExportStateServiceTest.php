@@ -161,6 +161,7 @@ class ExportStateServiceTest extends KernelTestBase {
     $this->assertSame('done', $status['status']);
     $this->assertNotNull($status['finished_at'], 'finished_at must be set after finish().');
     $this->assertIsInt($status['finished_at']);
+    $this->assertNull($status['last_error'], 'A clean done must clear last_error.');
   }
 
   /**
