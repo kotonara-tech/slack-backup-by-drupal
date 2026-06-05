@@ -17,6 +17,7 @@ use Drupal\slack_portal\Service\ChannelExporter;
 use Drupal\slack_portal\Service\ExportStateService;
 use Drupal\slack_portal\Service\SlackClientFactory;
 use Drupal\slack_portal\Service\SlackTokenProvider;
+use Drupal\slack_portal\Service\SlackWorkspaceMapper;
 use JoliCode\Slack\Api\Client as SlackApiClient;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
@@ -98,6 +99,7 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
       $this->container->get('datetime.time'),
       new NullLogger(),
       $queueFactory,
+      new SlackWorkspaceMapper(),
     );
   }
 

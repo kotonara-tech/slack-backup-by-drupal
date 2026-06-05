@@ -21,6 +21,7 @@ use Drupal\slack_portal\Service\ExportStateService;
 use Drupal\slack_portal\Service\SecretMasker;
 use Drupal\slack_portal\Service\SlackClientFactory;
 use Drupal\slack_portal\Service\SlackTokenProvider;
+use Drupal\slack_portal\Service\SlackWorkspaceMapper;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -82,6 +83,8 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
    *   A PSR-3 logger (logger.channel.slack_portal).
    * @param \Drupal\Core\Queue\QueueFactory $queueFactory
    *   The queue factory, used to re-enqueue a channel for a bounded retry.
+   * @param \Drupal\slack_portal\Service\SlackWorkspaceMapper $mapper
+   *   Builds the canonical channel index entry (shared with the Drush path).
    */
   public function __construct(
     array $configuration,
@@ -95,6 +98,7 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
     private readonly TimeInterface $time,
     private readonly LoggerInterface $logger,
     private readonly QueueFactory $queueFactory,
+    private readonly SlackWorkspaceMapper $mapper,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -120,6 +124,7 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
       $container->get('datetime.time'),
       $container->get('logger.channel.slack_portal'),
       $container->get('queue'),
+      $container->get('slack_portal.workspace_mapper'),
     );
   }
 
@@ -147,18 +152,8 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
         $oldest,
       );
 
-      $channelName = (string) ($channelMeta['name'] ?? $channelId);
-      $channelType = (string) ($channelMeta['type'] ?? 'public_channel');
-
-      $indexEntry = [
-        'id' => $channelId,
-        'name' => $channelName,
-        'type' => $channelType,
-        'file' => "channels/{$channelId}.json",
-      ];
-
       $this->stateService->recordChannel(
-        $indexEntry,
+        $this->mapper->toChannelIndexEntry($channelMeta),
         (int) ($result['messages'] ?? 0),
         (int) ($result['files'] ?? 0),
       );

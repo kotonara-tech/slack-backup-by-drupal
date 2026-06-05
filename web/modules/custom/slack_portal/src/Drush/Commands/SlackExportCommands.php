@@ -157,12 +157,7 @@ final class SlackExportCommands extends DrushCommands {
       $messageTotal += (int) ($stats['messages'] ?? 0);
       $channelCount++;
 
-      $channelsIndex[] = [
-        'id' => $channelId,
-        'name' => $channelName,
-        'type' => $channelMeta['type'],
-        'file' => "channels/{$channelId}.json",
-      ];
+      $channelsIndex[] = $this->mapper->toChannelIndexEntry($channelMeta);
     }
 
     $this->portalLogger->notice(

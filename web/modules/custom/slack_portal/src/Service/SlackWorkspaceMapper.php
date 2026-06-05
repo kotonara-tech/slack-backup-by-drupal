@@ -102,4 +102,28 @@ final class SlackWorkspaceMapper {
     ];
   }
 
+  /**
+   * Builds the canonical channel index entry for the manifest.
+   *
+   * Single source of truth for the {id,name,type,file} shape shared by the
+   * Drush command and the queue worker, and matching CanonicalJsonWriter's
+   * channels/<id>.json path.
+   *
+   * @param array<string,mixed> $channelMeta
+   *   Channel metadata (at minimum 'id'; also 'name', 'type').
+   *
+   * @return array<string,string>
+   *   The index entry: id, name (falls back to id), type (default
+   *   public_channel), and the relative file path channels/<id>.json.
+   */
+  public function toChannelIndexEntry(array $channelMeta): array {
+    $id = (string) ($channelMeta['id'] ?? '');
+    return [
+      'id' => $id,
+      'name' => (string) ($channelMeta['name'] ?? $id),
+      'type' => (string) ($channelMeta['type'] ?? 'public_channel'),
+      'file' => "channels/{$id}.json",
+    ];
+  }
+
 }

@@ -16,6 +16,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\State\StateInterface;
 use Drupal\encrypt\EncryptionProfileManagerInterface;
 use Drupal\encrypt\EncryptServiceInterface;
+use Drupal\slack_portal\Service\SlackTokenProvider;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -27,16 +28,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * plaintext is never written to configuration or logs.
  */
 final class SlackSettingsForm extends ConfigFormBase {
-
-  /**
-   * Drupal State key for the encrypted token ciphertext.
-   */
-  private const TOKEN_STATE_KEY = 'slack_portal.token_ciphertext';
-
-  /**
-   * Encryption profile ID used for token encryption/decryption.
-   */
-  private const ENCRYPTION_PROFILE_ID = 'slack_portal';
 
   /**
    * Constructs a SlackSettingsForm.
@@ -104,7 +95,7 @@ final class SlackSettingsForm extends ConfigFormBase {
     ];
 
     // Determine whether a token is already stored (non-empty ciphertext).
-    $existingCipher = $this->state->get(self::TOKEN_STATE_KEY);
+    $existingCipher = $this->state->get(SlackTokenProvider::TOKEN_STATE_KEY);
     $hasStoredToken = is_string($existingCipher) && $existingCipher !== '';
 
     if ($hasStoredToken) {
@@ -138,7 +129,7 @@ final class SlackSettingsForm extends ConfigFormBase {
     $submittedToken = (string) $form_state->getValue('slack_user_token');
     if ($submittedToken !== '') {
       $profiles = $this->profileManager->getAllEncryptionProfiles();
-      if (!isset($profiles[self::ENCRYPTION_PROFILE_ID])) {
+      if (!isset($profiles[SlackTokenProvider::ENCRYPTION_PROFILE_ID])) {
         // The encryption profile is not installed; warn the operator.
         $this->messenger()->addError(
           $this->t('暗号化プロファイル未設定（SLACK_ENCRYPTION_KEY を設定してください）')
@@ -148,10 +139,10 @@ final class SlackSettingsForm extends ConfigFormBase {
         return;
       }
 
-      $profile = $profiles[self::ENCRYPTION_PROFILE_ID];
+      $profile = $profiles[SlackTokenProvider::ENCRYPTION_PROFILE_ID];
       // Encrypt the token; NEVER log the plaintext or the ciphertext.
       $cipher = $this->encryption->encrypt($submittedToken, $profile);
-      $this->state->set(self::TOKEN_STATE_KEY, $cipher);
+      $this->state->set(SlackTokenProvider::TOKEN_STATE_KEY, $cipher);
     }
     // Empty token: existing State ciphertext is left untouched.
     parent::submitForm($form, $form_state);

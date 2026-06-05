@@ -28,6 +28,19 @@ use Drupal\encrypt\EncryptServiceInterface;
 final class SlackTokenProvider {
 
   /**
+   * Drupal State key under which the encrypted token ciphertext is stored.
+   *
+   * Public so SlackSettingsForm (writer) and this provider (reader) share one
+   * source of truth.
+   */
+  public const TOKEN_STATE_KEY = 'slack_portal.token_ciphertext';
+
+  /**
+   * The encryption profile id used to encrypt/decrypt the token.
+   */
+  public const ENCRYPTION_PROFILE_ID = 'slack_portal';
+
+  /**
    * Constructs a SlackTokenProvider.
    *
    * @param \Drupal\Core\Site\Settings $settings
@@ -48,8 +61,8 @@ final class SlackTokenProvider {
     private readonly StateInterface $state,
     private readonly EncryptServiceInterface $encryption,
     private readonly EncryptionProfileManagerInterface $profileManager,
-    private readonly string $encryptionProfileId = 'slack_portal',
-    private readonly string $tokenStateKey = 'slack_portal.token_ciphertext',
+    private readonly string $encryptionProfileId = self::ENCRYPTION_PROFILE_ID,
+    private readonly string $tokenStateKey = self::TOKEN_STATE_KEY,
   ) {
   }
 
