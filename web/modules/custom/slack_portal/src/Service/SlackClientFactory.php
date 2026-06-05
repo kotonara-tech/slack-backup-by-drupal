@@ -11,6 +11,7 @@ namespace Drupal\slack_portal\Service;
 
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Utils as GuzzleUtils;
 use GuzzleRetry\GuzzleRetryMiddleware;
 use JoliCode\Slack\Api\Client as SlackApiClient;
 use JoliCode\Slack\ClientFactory;
@@ -52,6 +53,29 @@ final class SlackClientFactory {
     $stack->push(GuzzleRetryMiddleware::factory($retryOptions + $this->defaultRetryOptions()));
     $guzzle = new GuzzleClient(['handler' => $stack]);
     return ClientFactory::create($token, $guzzle);
+  }
+
+  /**
+   * Builds a production Slack API client using the default Guzzle handler.
+   *
+   * This is the production entry-point. It selects the best available Guzzle
+   * transport handler (cURL, stream, etc.) via GuzzleUtils::chooseHandler()
+   * and delegates to createWithHandler() so the retry middleware is applied
+   * consistently.
+   *
+   * For tests that need to intercept requests, use createWithHandler() with a
+   * GuzzleHttp\Handler\MockHandler directly.
+   *
+   * @param string $token
+   *   A Slack user token (xoxp-) or bot token (xoxb-).
+   *   Must NOT be logged or committed. Keep in Key/settings.local.php.
+   *
+   * @return \JoliCode\Slack\Api\Client
+   *   A configured Slack API client with Authorization: Bearer <token> and
+   *   automatic 429/503 retry backoff.
+   */
+  public function create(string $token): SlackApiClient {
+    return $this->createWithHandler(GuzzleUtils::chooseHandler(), $token);
   }
 
   /**
