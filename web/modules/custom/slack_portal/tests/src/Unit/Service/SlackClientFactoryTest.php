@@ -114,6 +114,21 @@ class SlackClientFactoryTest extends UnitTestCase {
   }
 
   /**
+   * Tests that create() returns a JoliCode Slack API Client instance.
+   *
+   * Given a Slack user token,
+   * When create() is called with no explicit handler,
+   * Then the returned value is an instance of JoliCode\Slack\Api\Client
+   * And no actual network request is made (client is merely constructed).
+   */
+  public function testCreateReturnsSlackApiClient(): void {
+    $factory = new SlackClientFactory();
+    $client = $factory->create(self::TEST_TOKEN);
+
+    $this->assertInstanceOf(SlackApiClient::class, $client);
+  }
+
+  /**
    * Tests that the retry delay is capped by max_allowable_timeout_secs.
    *
    * Given a MockHandler queued with a 429 (Retry-After: 3600) then a 200,
