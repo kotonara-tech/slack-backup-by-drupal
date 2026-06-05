@@ -58,7 +58,7 @@ class SlackPortalApiControllerTest extends KernelTestBase {
   }
 
   /**
-   * Builds the controller with a mocked ExportTrigger and real ExportStateService.
+   * Builds the controller with a mocked trigger and real state service.
    *
    * @param \Drupal\slack_portal\Service\ExportTrigger $triggerMock
    *   A mock or real ExportTrigger instance.

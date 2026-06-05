@@ -42,8 +42,6 @@ class SlackWorkspaceMapperTest extends UnitTestCase {
     $this->mapper = new SlackWorkspaceMapper();
   }
 
-  // ------------------------------------------------------------------ users --
-
   /**
    * Tests toCanonicalUser maps all fields from a full raw user record.
    *
@@ -121,8 +119,6 @@ class SlackWorkspaceMapperTest extends UnitTestCase {
 
     $this->assertTrue($result['deleted']);
   }
-
-  // --------------------------------------------------------------- channels --
 
   /**
    * Provides raw channel fixtures and expected types for toChannelMeta tests.

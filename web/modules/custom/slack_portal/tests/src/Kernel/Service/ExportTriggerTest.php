@@ -67,7 +67,7 @@ class ExportTriggerTest extends KernelTestBase {
   /**
    * Builds the MockHandler queue for ExportTrigger::trigger().
    *
-   * Call order: (1) users.list (U1), (2) conversations.list (C1 public + D1 im).
+   * Call order: (1) users.list (U1), (2) conversations.list (C1 + D1).
    *
    * @return \GuzzleHttp\Handler\MockHandler
    *   The MockHandler with ordered responses.
@@ -126,7 +126,7 @@ class ExportTriggerTest extends KernelTestBase {
    *
    * Injects a MockHandler-backed SlackClientFactory subclass, real queue,
    * real ExportStateService, real SlackFetcher, real SlackWorkspaceMapper,
-   * real CanonicalJsonWriter, and a SlackTokenProvider that reads from Settings.
+   * real CanonicalJsonWriter, and a Settings-backed SlackTokenProvider.
    *
    * @param \GuzzleHttp\Handler\MockHandler $mockHandler
    *   The MockHandler to inject into the test factory subclass.
@@ -190,13 +190,12 @@ class ExportTriggerTest extends KernelTestBase {
   }
 
   /**
-   * Tests trigger() returns correct counts, writes users.json, fills queue,
-   * and transitions state to 'running'.
+   * Tests trigger() counts, writes users.json, fills queue, sets running.
    *
    * Given:
    *   - users.list returns 1 user (U1).
    *   - conversations.list returns C1 (public) and D1 (im).
-   *   - A real queue factory and ExportStateService backed by real Drupal State.
+   *   - A real queue factory and ExportStateService backed by real State.
    *
    * When ExportTrigger::trigger() is called,
    *
