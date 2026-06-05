@@ -10,13 +10,17 @@ declare(strict_types=1);
 namespace Drupal\Tests\slack_portal\Unit\Service;
 
 use Drupal\Core\Site\Settings;
+use Drupal\Core\State\StateInterface;
 use Drupal\Tests\UnitTestCase;
+use Drupal\encrypt\EncryptionProfileInterface;
+use Drupal\encrypt\EncryptionProfileManagerInterface;
+use Drupal\encrypt\EncryptServiceInterface;
 use Drupal\slack_portal\Service\SlackTokenProvider;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * Tests SlackTokenProvider resolves token/config from Settings and env vars.
+ * Tests SlackTokenProvider resolves token/config from Settings, env, and State.
  *
  * @covers \Drupal\slack_portal\Service\SlackTokenProvider
  */
@@ -54,6 +58,27 @@ class SlackTokenProviderTest extends UnitTestCase {
   private string|false $originalEnvToken;
 
   /**
+   * Mock StateInterface (returns null by default — no encrypted token stored).
+   *
+   * @var \Drupal\Core\State\StateInterface&\PHPUnit\Framework\MockObject\MockObject
+   */
+  private StateInterface $state;
+
+  /**
+   * Mock EncryptServiceInterface (should not be called in Settings/env paths).
+   *
+   * @var \Drupal\encrypt\EncryptServiceInterface&\PHPUnit\Framework\MockObject\MockObject
+   */
+  private EncryptServiceInterface $encryption;
+
+  /**
+   * Mock EncryptionProfileManagerInterface.
+   *
+   * @var \Drupal\encrypt\EncryptionProfileManagerInterface&\PHPUnit\Framework\MockObject\MockObject
+   */
+  private EncryptionProfileManagerInterface $profileManager;
+
+  /**
    * {@inheritdoc}
    */
   protected function setUp(): void {
@@ -63,6 +88,13 @@ class SlackTokenProviderTest extends UnitTestCase {
     putenv('SLACK_USER_TOKEN');
     putenv('SLACK_EXPORT_SINCE_DAYS');
     putenv('SLACK_RATE_LIMIT_MAX_RETRIES');
+
+    // State returns null by default — encryption never called in Settings/env path.
+    $this->state = $this->createMock(StateInterface::class);
+    $this->state->method('get')->willReturn(NULL);
+
+    $this->encryption = $this->createMock(EncryptServiceInterface::class);
+    $this->profileManager = $this->createMock(EncryptionProfileManagerInterface::class);
   }
 
   /**
@@ -82,6 +114,24 @@ class SlackTokenProviderTest extends UnitTestCase {
   }
 
   /**
+   * Builds a SlackTokenProvider with mock deps and the given Settings.
+   *
+   * @param \Drupal\Core\Site\Settings $settings
+   *   Site settings to inject.
+   *
+   * @return \Drupal\slack_portal\Service\SlackTokenProvider
+   *   Configured provider instance.
+   */
+  private function buildProvider(Settings $settings): SlackTokenProvider {
+    return new SlackTokenProvider(
+      $settings,
+      $this->state,
+      $this->encryption,
+      $this->profileManager,
+    );
+  }
+
+  /**
    * Tests that getToken() returns the value from Settings when configured.
    *
    * Given Settings has slack_user_token set to the test token,
@@ -90,7 +140,7 @@ class SlackTokenProviderTest extends UnitTestCase {
    */
   public function testGetTokenReturnsSettingsToken(): void {
     $settings = new Settings(['slack_user_token' => self::TEST_TOKEN]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(self::TEST_TOKEN, $provider->getToken());
   }
@@ -106,7 +156,7 @@ class SlackTokenProviderTest extends UnitTestCase {
   public function testGetTokenFallsBackToEnvVar(): void {
     putenv('SLACK_USER_TOKEN=' . self::TEST_TOKEN);
     $settings = new Settings([]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(self::TEST_TOKEN, $provider->getToken());
   }
@@ -116,12 +166,13 @@ class SlackTokenProviderTest extends UnitTestCase {
    *
    * Given Settings has no slack_user_token,
    * And env var SLACK_USER_TOKEN is unset,
+   * And State has no ciphertext,
    * When getToken() is called,
    * Then a RuntimeException is thrown.
    */
   public function testGetTokenThrowsWhenNotConfigured(): void {
     $settings = new Settings([]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->expectException(\RuntimeException::class);
     $provider->getToken();
@@ -136,7 +187,7 @@ class SlackTokenProviderTest extends UnitTestCase {
    */
   public function testGetTokenExceptionMessageDoesNotContainToken(): void {
     $settings = new Settings([]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     try {
       $provider->getToken();
@@ -152,6 +203,88 @@ class SlackTokenProviderTest extends UnitTestCase {
   }
 
   /**
+   * Tests that State ciphertext path skips decryption when profile not found.
+   *
+   * Given State has a ciphertext stored,
+   * And the EncryptionProfileManager returns NULL for the profile ID,
+   * When getToken() is called,
+   * Then a RuntimeException is thrown (falls through to "not configured").
+   */
+  public function testGetTokenSkipsDecryptWhenProfileNotFound(): void {
+    // State returns a non-empty ciphertext.
+    $state = $this->createMock(StateInterface::class);
+    $state->method('get')
+      ->with('slack_portal.token_ciphertext')
+      ->willReturn('some-ciphertext');
+
+    // Profile manager returns NULL => profile not found.
+    $profileManager = $this->createMock(EncryptionProfileManagerInterface::class);
+    $profileManager->method('getEncryptionProfile')
+      ->willReturn(NULL);
+
+    $encryption = $this->createMock(EncryptServiceInterface::class);
+    $encryption->expects($this->never())->method('decrypt');
+
+    $provider = new SlackTokenProvider(
+      new Settings([]),
+      $state,
+      $encryption,
+      $profileManager,
+    );
+
+    $this->expectException(\RuntimeException::class);
+    $provider->getToken();
+  }
+
+  /**
+   * Tests that a decrypt exception wraps as RuntimeException without ciphertext.
+   *
+   * Given State has a ciphertext and the profile is found,
+   * And encryption->decrypt() throws,
+   * When getToken() is called,
+   * Then a RuntimeException is thrown with a generic message (no ciphertext).
+   */
+  public function testGetTokenThrowsCleanExceptionOnDecryptFailure(): void {
+    $state = $this->createMock(StateInterface::class);
+    $state->method('get')
+      ->with('slack_portal.token_ciphertext')
+      ->willReturn('bad-ciphertext');
+
+    $profile = $this->createMock(EncryptionProfileInterface::class);
+    $profileManager = $this->createMock(EncryptionProfileManagerInterface::class);
+    $profileManager->method('getEncryptionProfile')
+      ->willReturn($profile);
+
+    $encryption = $this->createMock(EncryptServiceInterface::class);
+    $encryption->method('decrypt')
+      ->willThrowException(new \Exception('crypto error'));
+
+    $provider = new SlackTokenProvider(
+      new Settings([]),
+      $state,
+      $encryption,
+      $profileManager,
+    );
+
+    try {
+      $provider->getToken();
+      $this->fail('Expected RuntimeException was not thrown.');
+    }
+    catch (\RuntimeException $e) {
+      // Message must not reveal the ciphertext.
+      $this->assertStringNotContainsString(
+        'bad-ciphertext',
+        $e->getMessage(),
+        'Exception message must not expose the ciphertext.'
+      );
+      $this->assertStringContainsString(
+        'decrypted',
+        $e->getMessage(),
+      );
+    }
+  }
+
+  /**
    * Tests that getSinceDays() returns 90 by default when nothing is configured.
    *
    * Given Settings has no slack_export_since_days and env is unset,
@@ -160,7 +293,7 @@ class SlackTokenProviderTest extends UnitTestCase {
    */
   public function testGetSinceDaysDefaultsToNinety(): void {
     $settings = new Settings([]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(90, $provider->getSinceDays());
   }
@@ -174,7 +307,7 @@ class SlackTokenProviderTest extends UnitTestCase {
    */
   public function testGetSinceDaysHonorsSettings(): void {
     $settings = new Settings(['slack_export_since_days' => 30]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(30, $provider->getSinceDays());
   }
@@ -190,7 +323,7 @@ class SlackTokenProviderTest extends UnitTestCase {
   public function testGetSinceDaysHonorsEnvVar(): void {
     putenv('SLACK_EXPORT_SINCE_DAYS=14');
     $settings = new Settings([]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(14, $provider->getSinceDays());
   }
@@ -204,7 +337,7 @@ class SlackTokenProviderTest extends UnitTestCase {
    */
   public function testGetSinceDaysDefaultsWhenZero(): void {
     $settings = new Settings(['slack_export_since_days' => 0]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(90, $provider->getSinceDays());
   }
@@ -218,7 +351,7 @@ class SlackTokenProviderTest extends UnitTestCase {
    */
   public function testGetMaxRetriesDefaultsToTen(): void {
     $settings = new Settings([]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(10, $provider->getMaxRetries());
   }
@@ -232,7 +365,7 @@ class SlackTokenProviderTest extends UnitTestCase {
    */
   public function testGetMaxRetriesHonorsSettings(): void {
     $settings = new Settings(['slack_rate_limit_max_retries' => 5]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(5, $provider->getMaxRetries());
   }
@@ -248,7 +381,7 @@ class SlackTokenProviderTest extends UnitTestCase {
   public function testGetMaxRetriesHonorsEnvVar(): void {
     putenv('SLACK_RATE_LIMIT_MAX_RETRIES=3');
     $settings = new Settings([]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(3, $provider->getMaxRetries());
   }
@@ -262,7 +395,7 @@ class SlackTokenProviderTest extends UnitTestCase {
    */
   public function testGetMaxRetriesDefaultsWhenNegative(): void {
     $settings = new Settings(['slack_rate_limit_max_retries' => -1]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(10, $provider->getMaxRetries());
   }
@@ -279,7 +412,7 @@ class SlackTokenProviderTest extends UnitTestCase {
     // Set a competing env token; Settings must win.
     putenv('SLACK_USER_TOKEN=' . self::ALT_TOKEN);
     $settings = new Settings(['slack_user_token' => self::TEST_TOKEN]);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(self::TEST_TOKEN, $provider->getToken());
   }
@@ -293,7 +426,7 @@ class SlackTokenProviderTest extends UnitTestCase {
    */
   public function testGetTokenTrimsWhitespace(): void {
     $settings = new Settings(['slack_user_token' => '  ' . self::TEST_TOKEN . '  ']);
-    $provider = new SlackTokenProvider($settings);
+    $provider = $this->buildProvider($settings);
 
     $this->assertSame(self::TEST_TOKEN, $provider->getToken());
   }
