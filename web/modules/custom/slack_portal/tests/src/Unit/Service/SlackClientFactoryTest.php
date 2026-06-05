@@ -201,4 +201,24 @@ class SlackClientFactoryTest extends UnitTestCase {
     $this->assertCount(0, $mock, 'Both responses must be consumed.');
   }
 
+  /**
+   * Tests retry options honour a provided max-retries value (from config).
+   *
+   * SlackTokenProvider::getMaxRetries() must actually drive the retry cap; the
+   * builder returns the provided value, and falls back to the default of 10.
+   */
+  public function testRetryOptionsUsesProvidedMaxRetries(): void {
+    $factory = new SlackClientFactory();
+
+    $opts = $factory->defaultRetryOptions(3);
+    $this->assertSame(3, $opts['max_retry_attempts'], 'Provided max retries must be applied.');
+    $this->assertSame([429, 503], $opts['retry_on_status']);
+
+    $this->assertSame(
+      10,
+      $factory->defaultRetryOptions()['max_retry_attempts'],
+      'Default max retries must be 10 when none is provided.',
+    );
+  }
+
 }
