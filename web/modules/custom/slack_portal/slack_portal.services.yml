@@ -43,3 +43,16 @@ services:
 
   slack_portal.workspace_mapper:
     class: Drupal\slack_portal\Service\SlackWorkspaceMapper
+
+  slack_portal.export_trigger:
+    class: Drupal\slack_portal\Service\ExportTrigger
+    arguments:
+      - '@slack_portal.token_provider'
+      - '@slack_portal.client_factory'
+      - '@slack_portal.fetcher'
+      - '@slack_portal.workspace_mapper'
+      - '@slack_portal.json_writer'
+      - '@queue'
+      - '@slack_portal.export_state'
+      - '@datetime.time'
+      - '@logger.channel.slack_portal'
