@@ -213,6 +213,90 @@ class ExportStateServiceTest extends KernelTestBase {
   }
 
   /**
+   * Tests recordChannel() is idempotent by channel id (queue redelivery).
+   *
+   * Drupal can re-deliver a queue item on crash/lease-expiry. Recording the
+   * same channel twice must not double-count processed/messages/files nor
+   * duplicate the channel index entry.
+   */
+  public function testRecordChannelIsIdempotentByChannelId(): void {
+    $this->stateService->start(2, 0);
+    $entry = ['id' => 'C1', 'name' => 'g', 'type' => 'public_channel', 'file' => 'channels/C1.json'];
+    $this->stateService->recordChannel($entry, 3, 2);
+    // Duplicate redelivery of the same channel.
+    $this->stateService->recordChannel($entry, 3, 2);
+
+    $status = $this->stateService->getStatus();
+    $this->assertSame(1, $status['processed'], 'Duplicate channel must not double-count processed.');
+    $this->assertSame(3, $status['messages'], 'Messages must not be double-counted.');
+    $this->assertSame(2, $status['files'], 'Files must not be double-counted.');
+    $this->assertCount(1, $status['channels'], 'Channel index must not be duplicated.');
+  }
+
+  /**
+   * Tests recordChannel() accumulates the downloaded file count.
+   */
+  public function testRecordChannelCountsFiles(): void {
+    $this->stateService->start(1, 0);
+    $this->stateService->recordChannel(
+      ['id' => 'C1', 'name' => 'g', 'type' => 'public_channel', 'file' => 'channels/C1.json'],
+      5,
+      4,
+    );
+    $this->assertSame(4, $this->stateService->getStatus()['files']);
+  }
+
+  /**
+   * Tests recordFailure() counts failures and keeps status 'running'.
+   *
+   * A per-channel failure must not flip the global status to 'error' (that is
+   * decided at finish()); it increments failed and stores the masked error so
+   * the run can still complete and become terminal.
+   */
+  public function testRecordFailureCountsAndKeepsRunning(): void {
+    $this->stateService->start(1, 0);
+    $this->stateService->recordFailure('C1', 'channel C1 export failed');
+
+    $status = $this->stateService->getStatus();
+    $this->assertSame(1, $status['failed']);
+    $this->assertSame('channel C1 export failed', $status['last_error']);
+    $this->assertSame('running', $status['status'], 'recordFailure keeps running until finish().');
+    $this->assertTrue($this->stateService->isComplete(), 'processed+failed >= total → complete.');
+  }
+
+  /**
+   * Tests recordFailure() is idempotent by channel id.
+   */
+  public function testRecordFailureIsIdempotentByChannelId(): void {
+    $this->stateService->start(2, 0);
+    $this->stateService->recordFailure('C1', 'channel C1 export failed');
+    $this->stateService->recordFailure('C1', 'channel C1 export failed');
+    $this->assertSame(1, $this->stateService->getStatus()['failed']);
+  }
+
+  /**
+   * Tests finish() with at least one failure sets status 'error'.
+   *
+   * The terminal status reflects whether any channel ultimately failed; a
+   * partial success with one failed channel ends as 'error' with last_error.
+   */
+  public function testFinishWithFailuresSetsErrorStatus(): void {
+    $this->stateService->start(2, 0);
+    $this->stateService->recordChannel(
+      ['id' => 'C1', 'name' => 'g', 'type' => 'public_channel', 'file' => 'channels/C1.json'],
+      1,
+    );
+    $this->stateService->recordFailure('C2', 'channel C2 export failed');
+
+    $this->stateService->finish();
+
+    $status = $this->stateService->getStatus();
+    $this->assertSame('error', $status['status']);
+    $this->assertSame('channel C2 export failed', $status['last_error']);
+    $this->assertNotNull($status['finished_at']);
+  }
+
+  /**
    * Tests that getStatus() returns the idle shape when state is unset.
    *
    * Given no state has been stored,
