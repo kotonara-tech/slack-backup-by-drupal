@@ -128,6 +128,8 @@ class SlackClientFactoryTest extends UnitTestCase {
     $client = $factory->create(self::TEST_TOKEN);
 
     $this->assertInstanceOf(SlackApiClient::class, $client);
+    // SlackClientFactory must be non-final so tests can subclass it.
+    $this->assertInstanceOf(SlackClientFactory::class, $factory);
   }
 
   /**

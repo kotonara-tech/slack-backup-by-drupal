@@ -27,7 +27,7 @@ use JoliCode\Slack\ClientFactory;
  * it in a HandlerStack and pushes the retry middleware on top. In production,
  * pass a plain callable or omit the handler to use Guzzle's default.
  */
-final class SlackClientFactory {
+class SlackClientFactory {
 
   /**
    * Builds a Slack API client from a callable Guzzle handler and a token.

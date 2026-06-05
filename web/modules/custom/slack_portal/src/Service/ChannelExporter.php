@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
  * This class is stateless between calls. Each call to exportChannel() is
  * independent and idempotent (given identical input and Slack API responses).
  */
-final class ChannelExporter {
+class ChannelExporter {
 
   /**
    * Constructs a ChannelExporter.
