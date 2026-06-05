@@ -224,4 +224,49 @@ class SlackFileDownloaderTest extends KernelTestBase {
     );
   }
 
+  /**
+   * Tests that a non-Slack host is skipped without sending the token.
+   *
+   * Security: the Slack Bearer token (workspace master credential) must
+   * never be sent to a host derived from message data. A url_private that
+   * points off Slack (e.g. an external/remote file whose url_private an
+   * attacker controls) must be skipped: NO HTTP request is made, so the
+   * token cannot be exfiltrated and no SSRF is performed.
+   */
+  public function testSkipsDownloadFromNonSlackHostWithoutSendingToken(): void {
+    // Arrange: queue a response so that IF the request is (wrongly) sent, the
+    // history assertion fails cleanly rather than throwing on an empty queue.
+    $history = [];
+    $mock = new MockHandler([new Response(200, [], 'EVIL')]);
+    $httpClient = $this->buildGuzzleClient($mock, $history);
+    $downloader = new SlackFileDownloader(
+      $httpClient,
+      $this->fileSystem,
+      new NullLogger(),
+    );
+
+    $destUri = 'public://slack_archive/latest/files/F9.png';
+    $evilUrl = 'https://evil.example/files-pri/T1/F9.png';
+
+    // Act.
+    $result = $downloader->download($evilUrl, self::TEST_TOKEN, $destUri);
+
+    // Assert: no HTTP request was made → the token never left the process.
+    $this->assertCount(
+      0,
+      $history,
+      'No request may be sent to a non-Slack host (token exfiltration / SSRF).',
+    );
+
+    // Assert: contract preserved — the destination URI is still returned.
+    $this->assertSame($destUri, $result, 'download() must return the dest URI on skip.');
+
+    // Assert: nothing was written to disk for the skipped host.
+    $realPath = $this->fileSystem->realpath($destUri);
+    $this->assertTrue(
+      $realPath === FALSE || !file_exists((string) $realPath),
+      'No file may be written when a non-Slack host is skipped.',
+    );
+  }
+
 }
