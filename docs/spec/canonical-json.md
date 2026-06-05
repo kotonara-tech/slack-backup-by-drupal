@@ -99,7 +99,7 @@ public://slack_archive/latest/
 
 ### 3.2 Queue / HTTP 経路（バックグラウンドトリガ）
 
-`SlackFetchQueueWorker::writeManifestAndFinish()` が、全チャンネル完了時に書く形。`since_days` / `oldest_ts` を**持たない**。`counts.files` は**常に `0`**（queue worker は `files.list` パスを実行しない。§3.3 参照）。
+`SlackFetchQueueWorker::writeManifestAndFinish()` が、全チャンネル完了時に書く形。`since_days` / `oldest_ts` を**持たない**。`counts.channels` は成功したチャンネル数（`processed`）、`counts.failed` は失敗確定したチャンネル数、`counts.files` は実際に DL したインラインファイル数（State 由来）。
 
 ```json
 {
@@ -107,9 +107,10 @@ public://slack_archive/latest/
   "generated_at": "2026-06-05T01:23:45Z",
   "counts": {
     "channels": 12,
+    "failed": 0,
     "messages": 3456,
     "users": 78,
-    "files": 0
+    "files": 9
   },
   "channels": [
     {
@@ -130,17 +131,18 @@ public://slack_archive/latest/
 | `generated_at` | string | manifest 生成時刻。ISO-8601 UTC（`gmdate('Y-m-d\TH:i:s\Z', …)`） | あり | あり |
 | `since_days` | int | `--since` で解析された取得日数（例 `90`） | **あり** | **なし** |
 | `oldest_ts` | string | 取得下限の Unix 秒（文字列）。`time() - since_days*86400` | **あり** | **なし** |
-| `counts.channels` | int | 出力したチャンネル数 | あり | あり |
+| `counts.channels` | int | チャンネル数。Drush=出力数、Queue=成功数(`processed`) | あり | あり |
+| `counts.failed` | int | 失敗確定したチャンネル数 | **なし** | **あり** |
 | `counts.messages` | int | トップレベル（fold 後）メッセージ総数 | あり | あり |
 | `counts.users` | int | `users.json` のユーザ数 | あり | あり |
-| `counts.files` | int | 添付ファイル数 | 実値（`files.list` カウント） | **常に `0`** |
+| `counts.files` | int | 添付ファイル数 | workspace 総数（`files.list`） | DL したインライン数（State 累計） |
 | `channels[]` | array | チャンネルインデックス（下記） | あり | あり |
 | `channels[].id` | string | チャンネル ID | あり | あり |
 | `channels[].name` | string | チャンネル名 | あり | あり |
 | `channels[].type` | string | チャンネル種別（§5 の `type` と同じ値域） | あり | あり |
 | `channels[].file` | string | チャンネル JSON への相対パス `channels/<id>.json` | あり | あり |
 
-> 正直な注記（実装の事実）: Queue/HTTP 経路の `counts.files` が `0` なのは、`SlackFetchQueueWorker` がチャンネル単位の処理しか行わず、ワークスペース全体の `files.list` パスを実行しないためである（`writeManifestAndFinish()` で `'files' => 0` をハードコード）。一方、添付ファイル実体のダウンロードと `files/<id>.<ext>` への保存、`local_path` の設定はどちらの経路でも `ChannelExporter` 内で行われる。したがって Queue/HTTP 経路でも `files/` 配下にファイルは存在しうるが、manifest の `counts.files` はそれを反映しない。
+> 正直な注記（実装の事実）: `counts.files` の**数え方は経路で異なる**。Drush 経路は `files.list` で得た workspace 全体のファイル総数。Queue/HTTP 経路は `ChannelExporter` がメッセージのインライン `files[]` から**実際に DL した数**の累計（`files.list` は実行しない）。外部/remote file（非 Slack ホスト）はスキップされ DL 数に加算されない。`counts.failed > 0` のとき export 全体の terminal 状態は `error` になる（`docs/spec/portal-api.md` §6）。
 
 ---
 

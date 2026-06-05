@@ -169,8 +169,10 @@ Cookie: <Drupal session>
   "status": "running",
   "total": 12,
   "processed": 5,
+  "failed": 0,
   "messages": 842,
   "users": 34,
+  "files": 9,
   "channels": [
     {
       "id": "C0123ABCD",
@@ -179,6 +181,7 @@ Cookie: <Drupal session>
       "file": "channels/C0123ABCD.json"
     }
   ],
+  "failed_channels": [],
   "started_at": 1717545600,
   "finished_at": null,
   "last_error": null
@@ -192,9 +195,12 @@ idle 形状（一度もエクスポートが起動されていない、または
   "status": "idle",
   "total": 0,
   "processed": 0,
+  "failed": 0,
   "messages": 0,
   "users": 0,
+  "files": 0,
   "channels": [],
+  "failed_channels": [],
   "started_at": null,
   "finished_at": null,
   "last_error": null
@@ -207,40 +213,41 @@ idle 形状（一度もエクスポートが起動されていない、または
 |------------|----|----|
 | `status` | string | 状態。`idle` / `running` / `done` / `error` のいずれか（§6） |
 | `total` | int | キュー投入したチャンネル数（`start()` 時に確定） |
-| `processed` | int | 処理完了したチャンネル数（ワーカーが `recordChannel()` で加算） |
+| `processed` | int | 成功したチャンネル数（`recordChannel()` で加算、channel id で冪等） |
+| `failed` | int | リトライ上限後に失敗確定したチャンネル数（`recordFailure()`） |
 | `messages` | int | 取得したトップレベルメッセージ数の累計 |
 | `users` | int | 取得したユーザ数（初回パスで確定） |
-| `channels` | array | 処理済みチャンネルのインデックスエントリ配列。各要素は `{id, name, type, file}` |
+| `files` | int | DL したインラインファイル数の累計 |
+| `channels` | array | 成功チャンネルのインデックスエントリ配列。各要素は `{id, name, type, file}` |
+| `failed_channels` | array | 失敗確定したチャンネル id の配列 |
 | `started_at` | int \| null | エクスポート開始 Unix 時刻（`running` 遷移時にセット） |
-| `finished_at` | int \| null | 完了 Unix 時刻（`done` 遷移時にセット。それ以外は `null`） |
-| `last_error` | string \| null | **事前マスク済み**のエラー文字列（`error` 時のみ。トークンを含まない） |
+| `finished_at` | int \| null | 完了 Unix 時刻（terminal 遷移 `done`/`error` でセット） |
+| `last_error` | string \| null | **事前マスク済み**のエラー文字列（失敗があるとき。`done` ではクリア） |
 
-> `last_error` のマスクは**呼び出し側の責務**である。`ExportStateService::fail()` は受け取った文字列をそのまま保存し、自動マスクは行わない。
+> `last_error` のマスクは**呼び出し側の責務**である。`ExportStateService::recordFailure()` / `fail()` は受け取った文字列をそのまま保存し、自動マスクは行わない（worker は channel id のみの定型文を渡す）。
 
 ## 6. 状態モデルとライフサイクル
 
 エクスポート状態は Drupal State API（キー `slack_portal.export_status`）に**単一の配列**として永続化される。`status` フィールドの取りうる値と遷移は以下のとおり。
 
 ```
-idle ──(POST /export → start())──▶ running ──(全チャンネル完了 → finish())──▶ done
-                                      │
-                                      └────────(例外発生 → fail())──────────▶ error
+idle ──(POST /export → start())──▶ running ──(processed+failed >= total → finish())──┬─▶ done   (failed == 0)
+                                                                                     └─▶ error  (failed > 0)
 ```
 
 - **`idle`**: 初期状態（未保存時のデフォルト）。`reset()` でもこの形状に戻る。
-- **`running`**: `ExportTrigger::trigger()` 内の `start()` で遷移。`started_at` がセットされる。
-- **`done`**: 全チャンネル処理完了後、ワーカー側が `finish()` を呼び遷移。`finished_at` がセットされる。
-- **`error`**: 処理中の例外で `fail(<masked>)` により遷移。`last_error` に事前マスク済み文字列が入る。
+- **`running`**: `ExportTrigger::trigger()` 内の `start()` で遷移。`started_at` がセットされる。**チャンネル単位の一時失敗は running を維持**し、QueueWorker が attempt を増やして再 enqueue（最大 `MAX_ATTEMPTS=3`）でリトライする（`docs/spec/ingest-pipeline.md` §3.3）。
+- **`done`**: 全チャンネルが成功または失敗確定し（`processed + failed >= total`）、失敗が **0** のとき `finish()` が遷移。`finished_at` をセットし `last_error` をクリア。
+- **`error`**: 同じ完了条件で**失敗が 1 件以上**のとき `finish()` が遷移。`last_error` に事前マスク済み文字列が残る。terminal なので running へは戻らない。
+- 0 チャンネル（空 workspace）の場合は `ExportTrigger` が即 `finish()` し `done` になる（running に固着しない）。
 
 > **`queued` という永続状態は存在しない。** `queued` は POST 応答（§4.3）の一回限りの ack 値であり、`GET /status` の `status` には決して現れない。
 
 ### ポーリングクライアントが観測する流れ
 
 1. `POST /export` が **`{"status":"queued", …}`** を返す（ack。永続状態は同時に `running` へ）。
-2. 以降 `GET /status` をポーリングすると `status` は **`running`** を返す（`processed` が `total` に向かって増加）。
-3. 最終的に **`done`**（成功、`finished_at` セット）または **`error`**（失敗、`last_error` セット）へ収束する。
-
-クライアントは「POST 直後に `queued` を 1 回受け取り、その後は `status` エンドポイントで `running` → `done` / `error` を追う」モデルで実装すること。
+2. 以降 `GET /status` をポーリングすると `status` は **`running`** を返す（`processed`(+`failed`) が `total` に向かって増加）。一時失敗のリトライ中も `running` のまま。
+3. 最終的に **`done`**（全成功）または **`error`**（一部チャンネルが失敗確定）へ収束する。`running` 中だけポーリングすれば terminal を取りこぼさない。
 
 ## 7. 関連ドキュメント
 

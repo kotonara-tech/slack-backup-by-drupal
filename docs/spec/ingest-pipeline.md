@@ -129,12 +129,12 @@ QueueWorker プラグイン定義（属性）:
 
 `processItem($data)` の動作（1 項目 = 1 チャンネル）:
 
-1. キュー項目から `channel_meta` と `oldest`（未設定なら `NULL`）を取り出す。
-2. `SlackTokenProvider::getToken()` → `SlackClientFactory::create($token)`。
-3. `ChannelExporter::exportChannel($client, $token, $channelMeta, $oldest)` を実行（§4）。
-4. **成功時**: チャンネル index（`id` / `name` / `type` / `file: "channels/<id>.json"`）を組み、`ExportStateService::recordChannel($indexEntry, $result['messages'])` で進捗を加算する。
-5. `ExportStateService::isComplete()`（`total > 0 && processed >= total`）が真になったら、`writeManifestAndFinish()` で **manifest.json** を書き、`ExportStateService::finish()` で状態を `done` に遷移させる。
-6. **失敗時**: `ExportStateService::fail("channel <id> export failed")`（トークンを含まない事前マスク文字列）を記録し、チャンネル ID と例外メッセージをログ出力したうえで **例外を再 throw** する。これにより Drupal のキューシステムが再試行／dead-letter を行う（冪等な再処理が前提）。
+1. キュー項目から `channel_meta` / `oldest`（未設定なら `NULL`）/ `attempt`（未設定なら `0`）を取り出す。
+2. `SlackTokenProvider::getToken()` → `SlackClientFactory::create($token, getMaxRetries())`。
+3. `ChannelExporter::exportChannel($client, $token, $channelMeta, $oldest)` を実行（§4）。返り値は `['messages' => N, 'files' => M]`。
+4. **成功時**: `SlackWorkspaceMapper::toChannelIndexEntry($channelMeta)`（`id`/`name`/`type`/`file`）を組み、`ExportStateService::recordChannel($indexEntry, $messages, $files)` で進捗を加算する（channel id で**冪等**＝再配信で二重計上しない）。
+5. **失敗時（有界リトライ）**: 例外を**再 throw しない**。`attempt + 1 < MAX_ATTEMPTS`（=3）なら、`attempt` を +1 した項目を `slack_portal_fetch` に**再 enqueue**して現項目を消費する（status は `running` のまま）。上限到達なら `ExportStateService::recordFailure($channelId, "channel <id> export failed after 3 attempts")`（トークン非含有の事前マスク文字列）で失敗を確定する。いずれもログは `SecretMasker::mask()` を通す。
+6. **完了判定**: 成功・失敗確定のいずれの後でも、`ExportStateService::isComplete()`（`total > 0 && processed + failed >= total`）が真なら `writeManifestAndFinish()` で **manifest.json** を書き、`finish()` で terminal 状態へ遷移する（**失敗が 1 件でもあれば `error`、無ければ `done`**）。再 enqueue だけの場合は未完了なので no-op。
 
 ### 3.4 (B) のマニフェスト内容
 
@@ -146,6 +146,7 @@ QueueWorker プラグイン定義（属性）:
   "generated_at": "<gmdate Y-m-d\\TH:i:s\\Z>",
   "counts": {
     "channels": 0,
+    "failed": 0,
     "messages": 0,
     "users": 0,
     "files": 0
@@ -157,8 +158,7 @@ QueueWorker プラグイン定義（属性）:
 経路 (A) との差分（実装の事実として明記）:
 
 - `since_days` / `oldest_ts` キーは **含まれない**。
-- `counts.files` は worker 集計の対象外で、**常に `0`** が書かれる（バックグラウンド経路は `files.list` の集計パスを実行しない）。
-- `counts.channels` / `counts.messages` / `counts.users` と `channels` 配列は `ExportStateService` の累積値から取る。
+- `counts.channels` は **`processed`**（成功したチャンネル数）、`counts.failed` は失敗確定したチャンネル数。`counts.messages` / `counts.users` / `counts.files` と `channels` 配列はいずれも `ExportStateService` の累積値から取る。`counts.files` は **ChannelExporter が実際に DL したインラインファイル数**（`files.list` の総数ではない＝経路 A とは数え方が異なる）。
 
 ---
 
@@ -236,11 +236,11 @@ QueueWorker プラグイン定義（属性）:
 
 `SlackClientFactory` は Guzzle の `HandlerStack` に `caseyamcl/guzzle_retry_middleware`（`GuzzleRetryMiddleware`）を push する。これは jolicode の php-http プラグイン層より下の **Guzzle トランスポート層**で再試行するため、`SlackErrorPlugin` が応答を見る前に 429／503 を吸収する。
 
-`SlackClientFactory::defaultRetryOptions()`（実装値）:
+`SlackClientFactory::defaultRetryOptions($maxRetries)`（実装値）:
 
 ```php
 [
-  'max_retry_attempts'         => 10,
+  'max_retry_attempts'         => $maxRetries ?? 10,
   'retry_on_status'            => [429, 503],
   'default_retry_multiplier'   => 1.5,
   'max_allowable_timeout_secs' => 60,
@@ -253,9 +253,9 @@ QueueWorker プラグイン定義（属性）:
 - **`Retry-After` 尊重**: ヘッダがあればその秒数を待つ。
 - **指数バックオフ**: `Retry-After` が無い場合は `1.5×` の倍率で増加。
 - **単一待機の上限**: 1 回の再試行待機は最大 **60 秒**。
-- **最大再試行回数**: **10 回**（ハードコードされた既定値）。
+- **最大再試行回数**: `SlackTokenProvider::getMaxRetries()`（Settings `slack_rate_limit_max_retries` / 環境変数 `SLACK_RATE_LIMIT_MAX_RETRIES` / 既定 **10**）の値。`create($token, $maxRetries)` 経由で全呼び出し元（Drush / ExportTrigger / QueueWorker）が設定値を渡す。
 
-> **実装上の注意（要件との差分）**: `SlackTokenProvider::getMaxRetries()`（Settings `slack_rate_limit_max_retries` / 環境変数 `SLACK_RATE_LIMIT_MAX_RETRIES` / 既定 10 を解決）は存在するが、**現状 `SlackClientFactory` には配線されていない**。`slack_portal.client_factory` サービスは引数を取らず、`create()` は常に `defaultRetryOptions()` の `max_retry_attempts => 10` を使う。`createWithHandler()` の第 3 引数 `$retryOptions` で上書きは可能だが、本番経路（`create()`）は上書きしない。したがって**実効の最大再試行回数は固定で 10** であり、`getMaxRetries()` の設定値は現時点では再試行回数に反映されない。
+> 注: この middleware 層の retry（429/503 backoff）は HTTP 1 リクエスト内の再試行。チャンネル単位の失敗に対する**有界リトライ（attempt / MAX_ATTEMPTS=3 の再 enqueue）は QueueWorker 層**（§3.3）で別途行う。
 
 ---
 
@@ -278,8 +278,8 @@ QueueWorker プラグイン定義（属性）:
 
 ### 8.3 `files.list` との関係（実装の事実）
 
-- 経路 (A) は `files.list` を**件数集計目的でのみ**反復し、その結果でダウンロードや突き合わせは行わない。
-- 経路 (B)（キュー worker）は `files.list` を**まったく実行しない**。マニフェストの `counts.files` は常に `0`。
+- 経路 (A) は `files.list` を**件数集計目的でのみ**反復し（`counts.files` = workspace 総ファイル数）、その結果でダウンロードや突き合わせは行わない。
+- 経路 (B)（キュー worker）は `files.list` を**まったく実行しない**。`counts.files` は **ChannelExporter が実際に DL したインラインファイル数の累計**（State 由来）であり、経路 A の総数とは数え方が異なる。
 - いずれの経路でも `files.list` の結果とインライン `files[]` の dedup-merge は行わない。ファイルの重複排除は §8.2 のダウンロード単位（宛先サイズ一致）でのみ機能する。
 
 ---
