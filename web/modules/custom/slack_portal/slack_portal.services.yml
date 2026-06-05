@@ -32,3 +32,7 @@ services:
   slack_portal.json_writer:
     class: Drupal\slack_portal\Service\CanonicalJsonWriter
     arguments: ['@file_system', '@logger.channel.slack_portal']
+
+  slack_portal.channel_exporter:
+    class: Drupal\slack_portal\Service\ChannelExporter
+    arguments: ['@slack_portal.fetcher', '@slack_portal.message_formatter', '@slack_portal.thread_folder', '@slack_portal.file_downloader', '@slack_portal.json_writer', '@logger.channel.slack_portal']

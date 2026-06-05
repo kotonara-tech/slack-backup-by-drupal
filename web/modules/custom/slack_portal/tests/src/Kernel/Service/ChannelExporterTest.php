@@ -157,7 +157,8 @@ class ChannelExporterTest extends KernelTestBase {
    *     (ts=2.0); the parent is excluded by SlackFetcher.fetchReplies().
    *   - MockHandler B delivers 'PNGDATA' (7 bytes) for the file download.
    *
-   * When exportChannel() is called with channelMeta ['id'=>'C1','name'=>'general'].
+   * When exportChannel() is called with channelMeta
+   * ['id'=>'C1','name'=>'general'].
    *
    * Then:
    *   1. The channel JSON is written to
@@ -268,7 +269,7 @@ class ChannelExporterTest extends KernelTestBase {
       'The single reply must have slack_ts "2.0".',
     );
 
-    // --- Assertion 5: parent's file has local_path and REDACTED url_private. ---
+    // --- Assertion 5: parent file has local_path + REDACTED url_private. ---
     $this->assertArrayHasKey(
       'files',
       $parent,
@@ -305,7 +306,7 @@ class ChannelExporterTest extends KernelTestBase {
       'exportChannel() must return ["messages" => 2] (top-level count).',
     );
 
-    // --- Assertion 8: token must not appear in channel JSON (secret safety). ---
+    // --- Assertion 8: token must not appear in channel JSON. ---
     $this->assertStringNotContainsString(
       self::TEST_TOKEN,
       (string) $raw,
