@@ -264,6 +264,7 @@ QueueWorker プラグイン定義（属性）:
 ### 8.1 ダウンロード（`SlackFileDownloader::download()`）
 
 - 取得対象は **メッセージのインライン `files[]`**（§4 ステップ 3）。チャンネルパイプラインからのみ呼ばれる。
+- **ホスト許可リスト（token 流出 / SSRF 防止）**: Bearer を付ける前に `url_private` を検証し、**`https` かつ host が `slack.com` / `*.slack.com`** の場合のみダウンロードする。それ以外（external/remote file 等で `url_private` が攻撃者ホストを指す場合）は**リクエストせずスキップ**し警告ログ（token 非出力）を残す。これによりワークスペース資格情報を Slack 以外へ送らない。
 - **Bearer 認証 + ストリーム**: `Authorization: Bearer <token>` ヘッダを付け、Guzzle の `sink` オプションでディスクへ直接ストリームする（本体をメモリに全展開しない）。
 - **保存パス**: `baseDir()/files/<fileId>.<ext>`。`<ext>` はファイル名から導出（小文字、拡張子が無ければ `bin`）。
 - **トークンの秘匿**: トークンはヘッダにのみ載り、JSON へは `url_private = 'REDACTED'` として書かれる。`local_path` に相対パスを記録する。
@@ -289,7 +290,7 @@ QueueWorker プラグイン定義（属性）:
 
 - `SlackTokenProvider` の例外メッセージはトークン／暗号文を含まない汎用文言（「Slack user token is not configured.」等）。
 - `ChannelExporter` はファイル DL 後に `url_private` を `'REDACTED'` へ置換。
-- `SlackFileDownloader` はトークンを `Authorization` ヘッダにのみ載せ、ログには出さない。
+- `SlackFileDownloader` はトークンを `Authorization` ヘッダにのみ載せ、ログには出さない。さらに **`https` の Slack ホスト（`slack.com` / `*.slack.com`）以外には一切リクエストしない**ため、token が Slack 以外へ送られることはない（§8.1）。
 - `ExportTrigger` のログ・返り値・キュー項目データにトークンは現れない。
 - `SlackFetchQueueWorker` は失敗時に事前マスク済みの `"channel <id> export failed"` のみを `ExportStateService::fail()` へ渡す。
 - `SlackPortalApiController` はエラー応答前に `xox[a-z]-…` パターンを `[REDACTED]` へ置換する。
