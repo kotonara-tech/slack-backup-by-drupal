@@ -31,6 +31,15 @@ describe("slack-portal API client", () => {
     );
   });
 
+  it("getCsrfToken は session token 取得が失敗したら throw する", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response("", { status: 403 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getCsrfToken()).rejects.toThrow();
+  });
+
   it("triggerExport は CSRF ヘッダ付きで POST し queued 結果を返す", async () => {
     const fetchMock = vi
       .fn()
