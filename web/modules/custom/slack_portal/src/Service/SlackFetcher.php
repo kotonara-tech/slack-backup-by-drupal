@@ -26,9 +26,6 @@ use Psr\Log\LoggerInterface;
  * before returning the response, the stream cursor is at EOF. Casting the body
  * to string with (string) rewinds the seekable Guzzle stream via __toString,
  * allowing the JSON to be decoded correctly.
- *
- * Methods NOT implemented here (belong to later ToDos):
- *   - fetchReplies: single conversations.replies call (A7)
  */
 final class SlackFetcher {
 
@@ -159,6 +156,55 @@ final class SlackFetcher {
       $totalPages = (int) ($paging['pages'] ?? 1);
       $page++;
     } while ($page <= $totalPages && $files !== []);
+  }
+
+  /**
+   * Fetches reply messages for a thread via conversations.replies.
+   *
+   * A single request is made with limit=200. Replies beyond 200 are out of
+   * scope for M1 (the project targets ≤90-day data volumes per channel).
+   *
+   * The Slack API returns the parent message first (its ts === $threadTs),
+   * followed by the actual replies. This method excludes the parent and
+   * returns only the reply messages.
+   *
+   * @param \JoliCode\Slack\Api\Client $client
+   *   A configured Slack API client (already built by SlackClientFactory).
+   * @param string $channelId
+   *   The Slack channel ID that contains the thread.
+   * @param string $threadTs
+   *   The timestamp (ts) of the thread's parent message.
+   *
+   * @return array<int, array<string, mixed>>
+   *   Array of reply message arrays, excluding the parent. Returns [] when
+   *   there are no replies.
+   */
+  public function fetchReplies(
+    SlackApiClient $client,
+    string $channelId,
+    string $threadTs,
+  ): array {
+    $this->logger->debug(
+      'Fetching replies for thread {thread_ts} in channel {channel}',
+      ['thread_ts' => $threadTs, 'channel' => $channelId],
+    );
+
+    /** @var \Psr\Http\Message\ResponseInterface $response */
+    $response = $client->conversationsReplies(
+      ['channel' => $channelId, 'ts' => $threadTs, 'limit' => 200],
+      SlackApiClient::FETCH_RESPONSE,
+    );
+
+    /** @var array<string, mixed> $data */
+    $data = json_decode((string) $response->getBody(), TRUE) ?? [];
+
+    /** @var array<int, array<string, mixed>> $messages */
+    $messages = $data['messages'] ?? [];
+
+    // Filter out the parent message (ts === threadTs); return only replies.
+    return array_values(
+      array_filter($messages, static fn(array $msg): bool => $msg['ts'] !== $threadTs)
+    );
   }
 
   /**

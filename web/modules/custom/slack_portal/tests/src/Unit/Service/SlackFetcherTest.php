@@ -287,7 +287,13 @@ class SlackFetcherTest extends UnitTestCase {
     // Then: only the two replies are returned (parent ts=1.0 excluded).
     $this->assertCount(2, $replies, 'Parent must be excluded; only 2 replies returned.');
     $this->assertSame('2.0', $replies[0]['ts'], 'First reply must have ts=2.0.');
+    $this->assertSame('r1', $replies[0]['text'], 'First reply text must be r1.');
     $this->assertSame('3.0', $replies[1]['ts'], 'Second reply must have ts=3.0.');
+    $this->assertSame('r2', $replies[1]['text'], 'Second reply text must be r2.');
+
+    // And: array is re-indexed (array_values applied after filter).
+    $this->assertArrayHasKey(0, $replies, 'Replies array must start at index 0.');
+    $this->assertArrayHasKey(1, $replies, 'Replies array must have index 1.');
 
     // And: outgoing request carried correct query params.
     $this->assertCount(1, $history, 'Exactly one request must have been made.');
