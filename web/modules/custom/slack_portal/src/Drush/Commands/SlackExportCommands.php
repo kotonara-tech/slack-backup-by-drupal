@@ -14,6 +14,7 @@ use Drupal\slack_portal\Service\ChannelExporter;
 use Drupal\slack_portal\Service\SlackClientFactory;
 use Drupal\slack_portal\Service\SlackFetcher;
 use Drupal\slack_portal\Service\SlackTokenProvider;
+use Drupal\slack_portal\Service\SlackWorkspaceMapper;
 use Drush\Attributes\Command;
 use Drush\Attributes\Option;
 use Drush\Commands\DrushCommands;
@@ -60,6 +61,8 @@ final class SlackExportCommands extends DrushCommands {
    * @param \Psr\Log\LoggerInterface $portalLogger
    *   A PSR-3 logger (logger.channel.slack_portal). Named $portalLogger to
    *   avoid collision with the non-readonly $logger property in DrushCommands.
+   * @param \Drupal\slack_portal\Service\SlackWorkspaceMapper $mapper
+   *   Pure mapper for raw Slack user/channel arrays to canonical shapes.
    */
   public function __construct(
     private readonly SlackTokenProvider $tokenProvider,
@@ -68,6 +71,7 @@ final class SlackExportCommands extends DrushCommands {
     private readonly ChannelExporter $channelExporter,
     private readonly CanonicalJsonWriter $writer,
     LoggerInterface $portalLogger,
+    private readonly SlackWorkspaceMapper $mapper = new SlackWorkspaceMapper(),
   ) {
     parent::__construct();
     $this->portalLogger = $portalLogger;
@@ -90,6 +94,7 @@ final class SlackExportCommands extends DrushCommands {
       $container->get('slack_portal.channel_exporter'),
       $container->get('slack_portal.json_writer'),
       $container->get('logger.channel.slack_portal'),
+      $container->get('slack_portal.workspace_mapper'),
     );
   }
 
@@ -126,7 +131,7 @@ final class SlackExportCommands extends DrushCommands {
       $rawUsers[] = $rawUser;
     }
     $canonicalUsers = array_map(
-      fn(array $u): array => $this->normalizeUser($u),
+      fn(array $u): array => $this->mapper->toCanonicalUser($u),
       $rawUsers,
     );
     $this->writer->writeUsers($canonicalUsers);
@@ -139,7 +144,7 @@ final class SlackExportCommands extends DrushCommands {
     $channelsIndex = [];
 
     foreach ($this->fetcher->fetchChannels($client, 'public_channel,private_channel,mpim,im') as $rawChannel) {
-      $channelMeta = $this->buildChannelMeta($rawChannel);
+      $channelMeta = $this->mapper->toChannelMeta($rawChannel);
       $channelId = (string) $channelMeta['id'];
       $channelName = (string) $channelMeta['name'];
 
@@ -212,83 +217,6 @@ final class SlackExportCommands extends DrushCommands {
       return (int) $normalized;
     }
     return 90;
-  }
-
-  /**
-   * Normalizes a raw Slack user array into the canonical user shape.
-   *
-   * @param array<string,mixed> $raw
-   *   A raw user array from users.list members[].
-   *
-   * @return array<string,mixed>
-   *   Canonical user shape: id, name, real_name, display_name, email, is_bot,
-   *   deleted, avatar.
-   */
-  private function normalizeUser(array $raw): array {
-    /** @var array<string,mixed> $profile */
-    $profile = isset($raw['profile']) && is_array($raw['profile']) ? $raw['profile'] : [];
-
-    return [
-      'id' => isset($raw['id']) ? (string) $raw['id'] : NULL,
-      'name' => isset($raw['name']) ? (string) $raw['name'] : NULL,
-      'real_name' => isset($raw['real_name']) ? (string) $raw['real_name'] : NULL,
-      'display_name' => isset($profile['display_name']) ? (string) $profile['display_name'] : NULL,
-      'email' => isset($profile['email']) ? (string) $profile['email'] : NULL,
-      'is_bot' => (bool) ($raw['is_bot'] ?? FALSE),
-      'deleted' => (bool) ($raw['deleted'] ?? FALSE),
-      'avatar' => isset($profile['image_192']) ? (string) $profile['image_192'] : NULL,
-    ];
-  }
-
-  /**
-   * Builds canonical channel metadata from a raw conversations.list channel.
-   *
-   * @param array<string,mixed> $raw
-   *   A raw channel array from conversations.list channels[].
-   *
-   * @return array<string,mixed>
-   *   Canonical channel metadata: id, name, type, is_private, is_im, is_mpim,
-   *   members, topic, purpose.
-   */
-  private function buildChannelMeta(array $raw): array {
-    $id = (string) ($raw['id'] ?? '');
-    $isIm = (bool) ($raw['is_im'] ?? FALSE);
-    $isMpim = (bool) ($raw['is_mpim'] ?? FALSE);
-    $isPrivate = (bool) ($raw['is_private'] ?? FALSE);
-
-    // Determine type from channel flags.
-    if ($isIm) {
-      $type = 'im';
-    }
-    elseif ($isMpim) {
-      $type = 'mpim';
-    }
-    elseif ($isPrivate) {
-      $type = 'private_channel';
-    }
-    else {
-      $type = 'public_channel';
-    }
-
-    // For IMs, name falls back to user then id; for others use name field.
-    $name = (string) ($raw['name'] ?? $raw['user'] ?? $id);
-
-    /** @var array<string,mixed> $topicArr */
-    $topicArr = isset($raw['topic']) && is_array($raw['topic']) ? $raw['topic'] : [];
-    /** @var array<string,mixed> $purposeArr */
-    $purposeArr = isset($raw['purpose']) && is_array($raw['purpose']) ? $raw['purpose'] : [];
-
-    return [
-      'id' => $id,
-      'name' => $name,
-      'type' => $type,
-      'is_private' => $isPrivate,
-      'is_im' => $isIm,
-      'is_mpim' => $isMpim,
-      'members' => [],
-      'topic' => isset($topicArr['value']) ? (string) $topicArr['value'] : '',
-      'purpose' => isset($purposeArr['value']) ? (string) $purposeArr['value'] : '',
-    ];
   }
 
 }

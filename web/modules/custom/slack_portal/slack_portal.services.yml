@@ -40,3 +40,6 @@ services:
   slack_portal.export_state:
     class: Drupal\slack_portal\Service\ExportStateService
     arguments: ['@state', '@datetime.time']
+
+  slack_portal.workspace_mapper:
+    class: Drupal\slack_portal\Service\SlackWorkspaceMapper
