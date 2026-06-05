@@ -15,3 +15,5 @@ dependencies:
   - 'migrate_plus:migrate_plus'
   - 'migrate_tools:migrate_tools'
   - 'key:key'
+  - 'encrypt:encrypt'
+  - 'real_aes:real_aes'
