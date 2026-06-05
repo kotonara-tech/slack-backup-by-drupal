@@ -72,15 +72,25 @@ export async function triggerExport(): Promise<TriggerResult> {
       "X-CSRF-Token": token,
     },
   });
-  const data = (await res.json()) as TriggerResult | { status: "error"; message: string };
-  if (!res.ok || data.status === "error") {
-    const message =
-      "message" in data && data.message
-        ? data.message
-        : `エクスポートの起動に失敗しました (${res.status})`;
+
+  // Check res.ok BEFORE parsing: permission/CSRF failures return a non-JSON
+  // (plain-text / HTML) 403, so res.json() would throw an opaque SyntaxError
+  // and mask the real reason. Try to surface the sanitised JSON message when
+  // present, otherwise fall back to a status-coded message.
+  if (!res.ok) {
+    let message = `エクスポートの起動に失敗しました (${res.status})`;
+    try {
+      const body = (await res.json()) as { message?: string };
+      if (body && typeof body.message === "string" && body.message) {
+        message = body.message;
+      }
+    } catch {
+      // Non-JSON error body — keep the status-coded fallback message.
+    }
     throw new Error(message);
   }
-  return data;
+
+  return (await res.json()) as TriggerResult;
 }
 
 /**

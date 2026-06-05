@@ -101,6 +101,21 @@ describe("slack-portal API client", () => {
     await expect(triggerExport()).rejects.toThrow(/403/);
   });
 
+  it("triggerExport は非 JSON の 500(HTML) でも fallback メッセージで throw する", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("csrf-xyz", { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response("<html><body>Server Error</body></html>", {
+          status: 500,
+          headers: { "Content-Type": "text/html" },
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(triggerExport()).rejects.toThrow(/500/);
+  });
+
   it("fetchExportStatus は status JSON を credentials 付きで取得する", async () => {
     const status = {
       status: "running",
