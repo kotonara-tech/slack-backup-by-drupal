@@ -83,6 +83,24 @@ describe("SlackExportPanel", () => {
     ).toBeDisabled();
   });
 
+  it("done 状態では完了バッジと進捗を表示する", () => {
+    stubStatus(
+      makeStatus({
+        status: "done",
+        total: 4,
+        processed: 4,
+        messages: 40,
+        users: 5,
+        finished_at: 1717549200,
+      }),
+    );
+    stubTrigger();
+    renderPanel();
+
+    expect(screen.getByTestId("export-status-badge")).toHaveTextContent("完了");
+    expect(screen.getByText(/チャンネル 4 \/ 4/)).toBeInTheDocument();
+  });
+
   it("error 状態では last_error を Alert で表示する", () => {
     stubStatus(
       makeStatus({ status: "error", last_error: "channel C1 export failed" }),
