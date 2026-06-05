@@ -13,4 +13,12 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // frontend dev サーバを自動起動（既存があれば再利用）。E2E はモック（page.route）で
+  // backend を差し替えるため Drupal は不要。実スタック検証時は PLAYWRIGHT_BASE_URL を上書きする。
+  webServer: {
+    command: "npm run dev",
+    url: "http://localhost:3000",
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
 });
