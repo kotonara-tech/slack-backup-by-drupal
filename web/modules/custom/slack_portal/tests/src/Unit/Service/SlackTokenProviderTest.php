@@ -431,4 +431,18 @@ class SlackTokenProviderTest extends UnitTestCase {
     $this->assertSame(self::TEST_TOKEN, $provider->getToken());
   }
 
+  /**
+   * Tests the shared State key / profile id are exposed as public constants.
+   *
+   * SlackSettingsForm (writer) and SlackTokenProvider (reader) must agree on a
+   * single source of truth for the ciphertext State key and encryption profile.
+   */
+  public function testSharedConstants(): void {
+    $this->assertSame(
+      'slack_portal.token_ciphertext',
+      SlackTokenProvider::TOKEN_STATE_KEY,
+    );
+    $this->assertSame('slack_portal', SlackTokenProvider::ENCRYPTION_PROFILE_ID);
+  }
+
 }

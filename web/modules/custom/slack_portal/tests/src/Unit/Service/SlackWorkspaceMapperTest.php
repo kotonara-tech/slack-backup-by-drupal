@@ -289,4 +289,41 @@ class SlackWorkspaceMapperTest extends UnitTestCase {
     $this->assertSame('', $result['purpose']);
   }
 
+  /**
+   * Tests toChannelIndexEntry builds the canonical manifest index entry.
+   *
+   * The {id,name,type,file} shape is the single source of truth shared by the
+   * Drush command and the queue worker.
+   */
+  public function testToChannelIndexEntry(): void {
+    $mapper = new SlackWorkspaceMapper();
+    $entry = $mapper->toChannelIndexEntry([
+      'id' => 'C123',
+      'name' => 'general',
+      'type' => 'public_channel',
+    ]);
+
+    $this->assertSame(
+      [
+        'id' => 'C123',
+        'name' => 'general',
+        'type' => 'public_channel',
+        'file' => 'channels/C123.json',
+      ],
+      $entry,
+    );
+  }
+
+  /**
+   * Tests toChannelIndexEntry falls back to id for name and a default type.
+   */
+  public function testToChannelIndexEntryFallsBack(): void {
+    $mapper = new SlackWorkspaceMapper();
+    $entry = $mapper->toChannelIndexEntry(['id' => 'D9']);
+
+    $this->assertSame('D9', $entry['name'], 'name falls back to id.');
+    $this->assertSame('public_channel', $entry['type'], 'type defaults to public_channel.');
+    $this->assertSame('channels/D9.json', $entry['file']);
+  }
+
 }
