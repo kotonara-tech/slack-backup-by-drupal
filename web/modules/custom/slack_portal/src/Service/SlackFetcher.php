@@ -202,8 +202,9 @@ final class SlackFetcher {
     $messages = $data['messages'] ?? [];
 
     // Filter out the parent message (ts === threadTs); return only replies.
+    // Guard the 'ts' access: a message lacking it is treated as a non-parent.
     return array_values(
-      array_filter($messages, static fn(array $msg): bool => $msg['ts'] !== $threadTs)
+      array_filter($messages, static fn(array $msg): bool => ($msg['ts'] ?? NULL) !== $threadTs)
     );
   }
 

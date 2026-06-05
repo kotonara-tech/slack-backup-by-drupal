@@ -346,6 +346,7 @@ class SlackFetcherTest extends UnitTestCase {
     // with no undefined-array-key warning raised.
     $this->assertCount(1, $replies);
     $this->assertSame('no-ts', $replies[0]['text']);
+    $this->assertArrayNotHasKey('ts', $replies[0], 'The ts-less message keeps no ts key.');
   }
 
 }
