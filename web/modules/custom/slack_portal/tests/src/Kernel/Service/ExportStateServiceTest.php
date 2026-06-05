@@ -76,7 +76,7 @@ class ExportStateServiceTest extends KernelTestBase {
   }
 
   /**
-   * Tests that recordChannel() increments processed and messages, appends channel.
+   * Tests that recordChannel() increments counters and appends channel entry.
    *
    * Given start(2, 5) has been called,
    * When recordChannel(['id'=>'C1','name'=>'general','type'=>'public_channel',
