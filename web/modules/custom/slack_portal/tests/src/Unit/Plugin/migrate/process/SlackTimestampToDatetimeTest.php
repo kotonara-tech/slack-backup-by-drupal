@@ -42,4 +42,20 @@ class SlackTimestampToDatetimeTest extends MigrateProcessTestCase {
     $this->assertSame('2023-11-14T22:13:20', $result);
   }
 
+  /**
+   * Tests an empty timestamp yields NULL rather than the Unix epoch.
+   */
+  public function testEmptyTimestampReturnsNull(): void {
+    $plugin = new SlackTimestampToDatetime([], 'slack_timestamp_to_datetime', []);
+
+    $result = $plugin->transform(
+      '',
+      $this->migrateExecutable,
+      $this->row,
+      'field_posted_at',
+    );
+
+    $this->assertNull($result);
+  }
+
 }
