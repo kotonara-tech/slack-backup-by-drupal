@@ -269,4 +269,29 @@ class SlackFileDownloaderTest extends KernelTestBase {
     );
   }
 
+  /**
+   * Tests that a non-https Slack URL is skipped (token not sent over http).
+   *
+   * Even for a slack.com host, the token must only be sent over https.
+   */
+  public function testSkipsNonHttpsSlackUrl(): void {
+    $history = [];
+    $mock = new MockHandler([new Response(200, [], 'DATA')]);
+    $httpClient = $this->buildGuzzleClient($mock, $history);
+    $downloader = new SlackFileDownloader(
+      $httpClient,
+      $this->fileSystem,
+      new NullLogger(),
+    );
+
+    $result = $downloader->download(
+      'http://files.slack.com/files-pri/T1/F8.png',
+      self::TEST_TOKEN,
+      'public://slack_archive/latest/files/F8.png',
+    );
+
+    $this->assertCount(0, $history, 'No request may be sent over http.');
+    $this->assertSame('public://slack_archive/latest/files/F8.png', $result);
+  }
+
 }

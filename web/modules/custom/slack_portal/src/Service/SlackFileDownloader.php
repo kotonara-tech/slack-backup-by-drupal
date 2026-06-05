@@ -71,6 +71,19 @@ final class SlackFileDownloader {
     string $destStreamUri,
     ?int $expectedSize = NULL,
   ): string {
+    // SECURITY: only ever attach the Slack Bearer token to a Slack-owned host.
+    // url_private comes from message data and, for external/remote files, can
+    // point at an arbitrary (attacker-chosen) host. Sending the token there
+    // would exfiltrate the workspace credential and enable SSRF. Skip such
+    // files entirely — no HTTP request is made.
+    if (!$this->isAllowedSlackUrl($urlPrivate)) {
+      $this->logger->warning(
+        'Skipping file download from non-Slack host {host}; token not sent.',
+        ['host' => parse_url($urlPrivate, PHP_URL_HOST) ?: '(none)'],
+      );
+      return $destStreamUri;
+    }
+
     // Ensure the parent directory exists and is writable.
     $dir = dirname($destStreamUri);
     $this->fileSystem->prepareDirectory(
@@ -110,6 +123,30 @@ final class SlackFileDownloader {
     ]);
 
     return $destStreamUri;
+  }
+
+  /**
+   * Returns TRUE only for https URLs whose host is Slack-owned.
+   *
+   * The Slack user token is attached as a Bearer header when fetching this
+   * URL, so the host must be restricted to Slack's file hosts. Anything else
+   * (external/remote files, or an attacker-controlled url_private) is rejected
+   * so the token is never sent off Slack.
+   *
+   * @param string $url
+   *   The url_private to validate.
+   *
+   * @return bool
+   *   TRUE when $url is https and its host is slack.com or a *.slack.com host.
+   */
+  private function isAllowedSlackUrl(string $url): bool {
+    $scheme = parse_url($url, PHP_URL_SCHEME);
+    $host = parse_url($url, PHP_URL_HOST);
+    if ($scheme !== 'https' || !is_string($host) || $host === '') {
+      return FALSE;
+    }
+    $host = strtolower($host);
+    return $host === 'slack.com' || str_ends_with($host, '.slack.com');
   }
 
 }
