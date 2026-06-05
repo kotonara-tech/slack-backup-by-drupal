@@ -108,7 +108,7 @@ class ChannelExporter {
     }
 
     // Step 3: Inline file download — mutate each message's files[] in place.
-    $this->downloadFiles($flatList, $token);
+    $downloadedFiles = $this->downloadFiles($flatList, $token);
 
     // Step 4: Fold the flat list into threaded messages.
     $folded = $this->folder->fold($flatList);
@@ -121,8 +121,8 @@ class ChannelExporter {
       ['count' => count($folded), 'channel_id' => $channelId],
     );
 
-    // Step 6: Return top-level message count.
-    return ['messages' => count($folded)];
+    // Step 6: Return top-level message count and downloaded file count.
+    return ['messages' => count($folded), 'files' => $downloadedFiles];
   }
 
   /**
@@ -137,9 +137,14 @@ class ChannelExporter {
    *   The flat canonical message list (mutated in place).
    * @param string $token
    *   The Slack user token for Bearer authentication. Never logged.
+   *
+   * @return int
+   *   The number of files actually downloaded (skipped non-Slack/external
+   *   files are not counted).
    */
-  private function downloadFiles(array &$messages, string $token): void {
+  private function downloadFiles(array &$messages, string $token): int {
     $baseDir = $this->writer->baseDir();
+    $downloaded = 0;
 
     foreach ($messages as &$message) {
       if (empty($message['files'])) {
@@ -159,17 +164,25 @@ class ChannelExporter {
         $relativePath = "files/{$id}.{$ext}";
         $destUri = "{$baseDir}/{$relativePath}";
 
-        $this->downloader->download($urlPrivate, $token, $destUri, $size);
+        $written = $this->downloader->download($urlPrivate, $token, $destUri, $size);
 
-        // Set local_path and REDACT url_private — never persist the token URL.
-        $files[$i]['local_path'] = $relativePath;
-        $files[$i]['url_private'] = 'REDACTED';
+        // Only record a local copy and REDACT the URL when the file was
+        // actually fetched. A NULL return means the downloader skipped a
+        // non-Slack/external host: keep url_private so the reference is not
+        // lost and leave local_path NULL (no file on disk).
+        if ($written !== NULL) {
+          $files[$i]['local_path'] = $relativePath;
+          $files[$i]['url_private'] = 'REDACTED';
+          $downloaded++;
+        }
       }
 
       $message['files'] = $files;
     }
     // Release by-reference binding.
     unset($message);
+
+    return $downloaded;
   }
 
   /**

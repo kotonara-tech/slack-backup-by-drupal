@@ -62,26 +62,29 @@ final class SlackFileDownloader {
    *   If provided, skip download when the existing file has this exact size.
    *   Pass null to skip only when the file exists regardless of size.
    *
-   * @return string
-   *   The destination stream URI, whether the file was downloaded or skipped.
+   * @return string|null
+   *   The destination stream URI when the file is present (downloaded now or
+   *   already on disk). NULL when the download was skipped because the host is
+   *   not a Slack-owned host (no file was written) — so the caller can avoid
+   *   recording a dangling local_path or REDACTing the only reference.
    */
   public function download(
     string $urlPrivate,
     string $token,
     string $destStreamUri,
     ?int $expectedSize = NULL,
-  ): string {
+  ): ?string {
     // SECURITY: only ever attach the Slack Bearer token to a Slack-owned host.
     // url_private comes from message data and, for external/remote files, can
     // point at an arbitrary (attacker-chosen) host. Sending the token there
     // would exfiltrate the workspace credential and enable SSRF. Skip such
-    // files entirely — no HTTP request is made.
+    // files entirely — no HTTP request is made — and signal the skip via NULL.
     if (!$this->isAllowedSlackUrl($urlPrivate)) {
       $this->logger->warning(
         'Skipping file download from non-Slack host {host}; token not sent.',
         ['host' => parse_url($urlPrivate, PHP_URL_HOST) ?: '(none)'],
       );
-      return $destStreamUri;
+      return NULL;
     }
 
     // Ensure the parent directory exists and is writable.

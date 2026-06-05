@@ -299,11 +299,11 @@ class ChannelExporterTest extends KernelTestBase {
       'Downloaded file content must be "PNGDATA".',
     );
 
-    // --- Assertion 7: return value is ['messages' => 2]. ---
+    // --- Assertion 7: return value is messages=2, files=1 (one DL'd file). ---
     $this->assertSame(
-      ['messages' => 2],
+      ['messages' => 2, 'files' => 1],
       $result,
-      'exportChannel() must return ["messages" => 2] (top-level count).',
+      'exportChannel() must return top-level message count and downloaded files.',
     );
 
     // --- Assertion 8: token must not appear in channel JSON. ---
