@@ -246,4 +246,75 @@ class ExportTriggerTest extends KernelTestBase {
     $this->assertSame(1, $status['users']);
   }
 
+  /**
+   * Tests trigger() rejects a duplicate run while one is already running.
+   *
+   * Prevents a duplicate POST (second tab / retry / direct call) from resetting
+   * counters mid-run and double-enqueueing every channel.
+   */
+  public function testTriggerRejectsWhenAlreadyRunning(): void {
+    // Pre-set the shared State to 'running'.
+    $pre = new ExportStateService(
+      $this->container->get('state'),
+      $this->container->get('datetime.time'),
+    );
+    $pre->start(5, 0);
+
+    $trigger = $this->buildTrigger($this->buildMockHandler());
+
+    $this->expectException(\RuntimeException::class);
+    $trigger->trigger();
+  }
+
+  /**
+   * Tests trigger() on an empty workspace finalises immediately to 'done'.
+   *
+   * With zero channels there are no queue items, so the run must be finalised
+   * inline (manifest written, status 'done') instead of hanging on 'running'.
+   */
+  public function testTriggerEmptyWorkspaceFinishesDone(): void {
+    $usersBody = json_encode([
+      'ok' => TRUE,
+      'members' => [
+        ['id' => 'U1', 'name' => 'alice', 'profile' => []],
+      ],
+      'response_metadata' => ['next_cursor' => ''],
+    ]);
+    $emptyChannelsBody = json_encode([
+      'ok' => TRUE,
+      'channels' => [],
+      'response_metadata' => ['next_cursor' => ''],
+    ]);
+    $mock = new MockHandler([
+      new Response(200, ['Content-Type' => 'application/json'], (string) $usersBody),
+      new Response(200, ['Content-Type' => 'application/json'], (string) $emptyChannelsBody),
+    ]);
+
+    $trigger = $this->buildTrigger($mock);
+
+    // Act.
+    $result = $trigger->trigger();
+
+    // Assert: nothing queued, one user counted.
+    $this->assertSame(['queued' => 0, 'users' => 1], $result);
+
+    /** @var \Drupal\Core\Queue\QueueFactory $queueFactory */
+    $queueFactory = $this->container->get('queue');
+    $this->assertSame(0, $queueFactory->get('slack_portal_fetch')->numberOfItems());
+
+    // Assert: status finalised to 'done' (not stuck on 'running').
+    $stateService = new ExportStateService(
+      $this->container->get('state'),
+      $this->container->get('datetime.time'),
+    );
+    $this->assertSame('done', $stateService->getStatus()['status']);
+
+    // Assert: a manifest was written.
+    /** @var \Drupal\Core\File\FileSystemInterface $fileSystem */
+    $fileSystem = $this->container->get('file_system');
+    $manifestPath = $fileSystem->realpath('public://slack_archive/latest/manifest.json');
+    $this->assertNotFalse($manifestPath);
+    $this->assertFileExists((string) $manifestPath);
+  }
+
 }
