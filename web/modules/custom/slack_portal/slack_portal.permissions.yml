@@ -1,0 +1,4 @@
+administer slack_portal:
+  title: 'Administer Slack Portal'
+  description: 'Configure Slack workspace URL and encrypted token for the Slack Portal module.'
+  restrict access: true

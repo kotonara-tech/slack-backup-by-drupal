@@ -1,0 +1,7 @@
+slack_portal.settings:
+  path: '/admin/config/services/slack-portal'
+  defaults:
+    _form: '\Drupal\slack_portal\Form\SlackSettingsForm'
+    _title: 'Slack Portal'
+  requirements:
+    _permission: 'administer slack_portal'
