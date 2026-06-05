@@ -90,7 +90,7 @@ class ExportTrigger {
     }
 
     $token = $this->tokenProvider->getToken();
-    $client = $this->clientFactory->create($token);
+    $client = $this->clientFactory->create($token, $this->tokenProvider->getMaxRetries());
     $days = $this->tokenProvider->getSinceDays();
     $oldest = $this->time->getCurrentTime() - $days * 86400;
 

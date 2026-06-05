@@ -123,7 +123,7 @@ final class SlackExportCommands extends DrushCommands {
 
     // --- Step 2: Build API client ---
     $token = $this->tokenProvider->getToken();
-    $client = $this->clientFactory->create($token);
+    $client = $this->clientFactory->create($token, $this->tokenProvider->getMaxRetries());
 
     // --- Step 3: Export users ---
     $rawUsers = [];

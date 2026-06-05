@@ -69,29 +69,41 @@ class SlackClientFactory {
    * @param string $token
    *   A Slack user token (xoxp-) or bot token (xoxb-).
    *   Must NOT be logged or committed. Keep in Key/settings.local.php.
+   * @param int|null $maxRetries
+   *   Maximum 429/503 retry attempts (from getMaxRetries()). Null uses 10.
    *
    * @return \JoliCode\Slack\Api\Client
    *   A configured Slack API client with Authorization: Bearer <token> and
    *   automatic 429/503 retry backoff.
    */
-  public function create(string $token): SlackApiClient {
-    return $this->createWithHandler(GuzzleUtils::chooseHandler(), $token);
+  public function create(string $token, ?int $maxRetries = NULL): SlackApiClient {
+    return $this->createWithHandler(
+      GuzzleUtils::chooseHandler(),
+      $token,
+      $this->defaultRetryOptions($maxRetries),
+    );
   }
 
   /**
-   * Returns the default retry options for GuzzleRetryMiddleware.
+   * Returns the retry options for GuzzleRetryMiddleware.
    *
-   * These defaults follow the Slack API's rate-limiting guidance:
-   * - Retry up to 10 times on 429 (ratelimited) and 503 (service unavailable).
+   * These follow the Slack API's rate-limiting guidance:
+   * - Retry up to $maxRetries times (default 10) on 429 (ratelimited) and
+   *   503 (service unavailable).
    * - Use a 1.5× exponential multiplier when no Retry-After header is present.
    * - Cap any single retry delay at 60 seconds regardless of server directive.
+   *
+   * Public so the retry cap can be unit-tested and so callers may inspect it.
+   *
+   * @param int|null $maxRetries
+   *   Maximum retry attempts. Null falls back to the default of 10.
    *
    * @return array<string,mixed>
    *   Retry option map suitable for GuzzleRetryMiddleware::factory().
    */
-  private function defaultRetryOptions(): array {
+  public function defaultRetryOptions(?int $maxRetries = NULL): array {
     return [
-      'max_retry_attempts'      => 10,
+      'max_retry_attempts'      => $maxRetries ?? 10,
       'retry_on_status'         => [429, 503],
       'default_retry_multiplier' => 1.5,
       'max_allowable_timeout_secs' => 60,

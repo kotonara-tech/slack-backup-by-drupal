@@ -211,7 +211,7 @@ class SlackExportCommandsTest extends KernelTestBase {
       /**
        * {@inheritdoc}
        */
-      public function create(string $token): SlackApiClient {
+      public function create(string $token, ?int $maxRetries = NULL): SlackApiClient {
         return $this->createWithHandler($this->h, $token);
       }
 

@@ -139,7 +139,7 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
 
     try {
       $token = $this->tokenProvider->getToken();
-      $client = $this->clientFactory->create($token);
+      $client = $this->clientFactory->create($token, $this->tokenProvider->getMaxRetries());
       $result = $this->channelExporter->exportChannel(
         $client,
         $token,
