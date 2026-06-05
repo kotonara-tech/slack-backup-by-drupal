@@ -12,6 +12,7 @@ namespace Drupal\slack_portal\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\slack_portal\Service\ExportStateService;
 use Drupal\slack_portal\Service\ExportTrigger;
+use Drupal\slack_portal\Service\SecretMasker;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -87,10 +88,9 @@ final class SlackPortalApiController extends ControllerBase {
       return new JsonResponse(['status' => 'queued'] + $result);
     }
     catch (\Throwable $e) {
-      // Sanitise: only use the exception message if it is safe (no token).
-      // Strip any substring that looks like a Slack token (xoxp-/xoxb-).
-      $rawMessage = $e->getMessage();
-      $safeMessage = preg_replace('/xox[a-z]-[^\s"\']+/i', '[REDACTED]', $rawMessage) ?? $rawMessage;
+      // Sanitise: strip any Slack token-like substring before logging or
+      // returning the message (shared redaction — see SecretMasker).
+      $safeMessage = SecretMasker::mask($e->getMessage());
 
       $this->logger->error(
         'Slack export trigger failed: {message}',

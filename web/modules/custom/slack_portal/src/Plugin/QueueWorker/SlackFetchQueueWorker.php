@@ -12,11 +12,13 @@ namespace Drupal\slack_portal\Plugin\QueueWorker;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Queue\Attribute\QueueWorker;
+use Drupal\Core\Queue\QueueFactory;
 use Drupal\Core\Queue\QueueWorkerBase;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\slack_portal\Service\CanonicalJsonWriter;
 use Drupal\slack_portal\Service\ChannelExporter;
 use Drupal\slack_portal\Service\ExportStateService;
+use Drupal\slack_portal\Service\SecretMasker;
 use Drupal\slack_portal\Service\SlackClientFactory;
 use Drupal\slack_portal\Service\SlackTokenProvider;
 use Psr\Log\LoggerInterface;
@@ -25,15 +27,18 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Processes a single Slack channel export via the background queue.
  *
- * Each queue item carries one channel's metadata and an optional oldest
- * timestamp. The worker exports the channel, records state, and — when all
- * channels are complete — writes the final manifest and transitions status
- * to 'done'. On error the item is re-queued by Drupal's queue system
- * (the worker rethrows after recording the failure in ExportStateService).
+ * Each queue item carries one channel's metadata, an optional oldest
+ * timestamp, and an attempt counter. The worker exports the channel and
+ * records state. On a per-channel error it does NOT re-throw: while attempts
+ * remain (< MAX_ATTEMPTS) it re-enqueues the channel with an incremented
+ * attempt (bounded retry, status stays 'running'); once attempts are exhausted
+ * it records a terminal per-channel failure. When every channel is accounted
+ * for (success or terminal failure) it writes the final manifest and calls
+ * finish(), which yields 'done' (no failures) or 'error' (some failed).
  *
- * SECRETS RULE: The Slack token must never appear in log messages or in
- * the error string passed to ExportStateService::fail(). All error strings
- * stored in State are pre-masked by this class.
+ * SECRETS RULE: The Slack token must never appear in log messages or in any
+ * error string stored in State. Log messages are passed through SecretMasker
+ * and failure strings contain only the (non-sensitive) channel id.
  */
 #[QueueWorker(
   id: 'slack_portal_fetch',
@@ -41,6 +46,16 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   cron: ['time' => 60],
 )]
 final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFactoryPluginInterface {
+
+  /**
+   * The queue this worker drains and re-enqueues retries into.
+   */
+  private const QUEUE_NAME = 'slack_portal_fetch';
+
+  /**
+   * Maximum per-channel processing attempts before recording a failure.
+   */
+  private const MAX_ATTEMPTS = 3;
 
   /**
    * Constructs a SlackFetchQueueWorker.
@@ -65,6 +80,8 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
    *   Provides the current Unix timestamp for generated_at in the manifest.
    * @param \Psr\Log\LoggerInterface $logger
    *   A PSR-3 logger (logger.channel.slack_portal).
+   * @param \Drupal\Core\Queue\QueueFactory $queueFactory
+   *   The queue factory, used to re-enqueue a channel for a bounded retry.
    */
   public function __construct(
     array $configuration,
@@ -77,6 +94,7 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
     private readonly ExportStateService $stateService,
     private readonly TimeInterface $time,
     private readonly LoggerInterface $logger,
+    private readonly QueueFactory $queueFactory,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -101,6 +119,7 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
       $container->get('slack_portal.export_state'),
       $container->get('datetime.time'),
       $container->get('logger.channel.slack_portal'),
+      $container->get('queue'),
     );
   }
 
@@ -108,17 +127,15 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
    * Processes one channel export queue item.
    *
    * @param mixed $data
-   *   Expected shape: ['channel_meta'=>array<string,mixed>, 'oldest'=>?int].
-   *   'channel_meta' must contain at minimum 'id', 'name', and 'type'.
-   *
-   * @throws \Throwable
-   *   Re-thrown after recording the masked error in ExportStateService so that
-   *   Drupal's queue system can retry or move to a failed-items queue.
+   *   Expected shape: ['channel_meta'=>array<string,mixed>, 'oldest'=>?int,
+   *   'attempt'=>?int]. 'channel_meta' must contain at minimum 'id'.
    */
   public function processItem($data): void {
     /** @var array<string,mixed> $channelMeta */
     $channelMeta = (array) ($data['channel_meta'] ?? []);
     $oldest = isset($data['oldest']) ? (int) $data['oldest'] : NULL;
+    $attempt = (int) ($data['attempt'] ?? 0);
+    $channelId = (string) ($channelMeta['id'] ?? 'unknown');
 
     try {
       $token = $this->tokenProvider->getToken();
@@ -130,7 +147,6 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
         $oldest,
       );
 
-      $channelId = (string) ($channelMeta['id'] ?? '');
       $channelName = (string) ($channelMeta['name'] ?? $channelId);
       $channelType = (string) ($channelMeta['type'] ?? 'public_channel');
 
@@ -141,30 +157,49 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
         'file' => "channels/{$channelId}.json",
       ];
 
-      $this->stateService->recordChannel($indexEntry, (int) ($result['messages'] ?? 0));
-
-      if ($this->stateService->isComplete()) {
-        $this->writeManifestAndFinish();
-      }
+      $this->stateService->recordChannel(
+        $indexEntry,
+        (int) ($result['messages'] ?? 0),
+        (int) ($result['files'] ?? 0),
+      );
     }
     catch (\Throwable $e) {
-      $channelId = (string) ($channelMeta['id'] ?? 'unknown');
-      // Pre-mask: only the channel ID (non-sensitive) is included.
-      // The token is intentionally omitted from this string.
-      $maskedError = "channel {$channelId} export failed";
-      $this->stateService->fail($maskedError);
-
+      // Log a token-free, redacted message (defence-in-depth: the exception
+      // text should never carry a token, but mask it anyway).
       $this->logger->error(
-        'Slack channel export failed for channel {channel_id}: {message}',
+        'Slack channel export failed for channel {channel_id} (attempt {attempt}): {message}',
         [
-          // Log the channel ID but NOT the token.
           'channel_id' => $channelId,
-          'message' => $e->getMessage(),
+          'attempt' => $attempt + 1,
+          'message' => SecretMasker::mask($e->getMessage()),
         ],
       );
 
-      // Re-throw so Drupal's queue system handles retry / dead-letter.
-      throw $e;
+      if ($attempt + 1 < self::MAX_ATTEMPTS) {
+        // Bounded retry: re-enqueue with an incremented attempt and do NOT
+        // re-throw, so Drupal consumes the current item. The run stays
+        // 'running' (this channel is neither processed nor failed yet).
+        $this->queueFactory->get(self::QUEUE_NAME)->createItem([
+          'channel_meta' => $channelMeta,
+          'oldest' => $oldest,
+          'attempt' => $attempt + 1,
+        ]);
+      }
+      else {
+        // Retries exhausted: record a terminal per-channel failure with a
+        // pre-masked, token-free message so the run can still complete.
+        $this->stateService->recordFailure(
+          $channelId,
+          "channel {$channelId} export failed after " . self::MAX_ATTEMPTS . ' attempts',
+        );
+      }
+    }
+
+    // Finalise once every channel is accounted for (success or terminal
+    // failure). A re-enqueue leaves the run incomplete, so this is a no-op
+    // in that case.
+    if ($this->stateService->isComplete()) {
+      $this->writeManifestAndFinish();
     }
   }
 
@@ -180,10 +215,11 @@ final class SlackFetchQueueWorker extends QueueWorkerBase implements ContainerFa
         $this->time->getCurrentTime(),
       ),
       'counts' => [
-        'channels' => (int) ($s['total'] ?? 0),
+        'channels' => (int) ($s['processed'] ?? 0),
+        'failed' => (int) ($s['failed'] ?? 0),
         'messages' => (int) ($s['messages'] ?? 0),
         'users' => (int) ($s['users'] ?? 0),
-        'files' => 0,
+        'files' => (int) ($s['files'] ?? 0),
       ],
       'channels' => (array) ($s['channels'] ?? []),
     ];
