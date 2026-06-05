@@ -11,4 +11,8 @@ describe("createQueryClient", () => {
     expect(queries?.refetchOnWindowFocus).toBe(false);
     expect(queries?.staleTime).toBeGreaterThan(0);
   });
+
+  it("returns a fresh client instance each call", () => {
+    expect(createQueryClient()).not.toBe(createQueryClient());
+  });
 });
