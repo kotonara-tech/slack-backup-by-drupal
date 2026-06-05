@@ -411,4 +411,86 @@ class ChannelExporterTest extends KernelTestBase {
     );
   }
 
+  /**
+   * Tests an external (non-Slack-host) file is preserved, not REDACTed.
+   *
+   * When SlackFileDownloader skips a file whose url_private points off Slack
+   * (security guard), ChannelExporter must NOT claim a local copy nor destroy
+   * the original URL: local_path stays NULL and url_private is preserved, so
+   * the only reference to the attachment is not lost. The returned files count
+   * counts only files actually downloaded.
+   */
+  public function testExternalFileIsPreservedNotRedacted(): void {
+    $externalUrl = 'https://docs.google.com/document/d/EXT/edit';
+    $historyBody = json_encode([
+      'ok' => TRUE,
+      'messages' => [
+        [
+          'ts' => '3.0',
+          'user' => 'U4',
+          'text' => 'external file',
+          'files' => [
+            [
+              'id' => 'FEXT',
+              'name' => 'doc.gdoc',
+              'mimetype' => 'application/vnd.google-apps.document',
+              'url_private' => $externalUrl,
+              'size' => 0,
+            ],
+          ],
+        ],
+      ],
+      'response_metadata' => ['next_cursor' => ''],
+    ]);
+
+    $mockA = new MockHandler([
+      new Response(200, ['Content-Type' => 'application/json'], (string) $historyBody),
+    ]);
+    $client = (new SlackClientFactory())->createWithHandler($mockA, self::TEST_TOKEN);
+
+    // MockHandler B would throw if any download request were attempted.
+    $mockB = new MockHandler([]);
+    $stack = HandlerStack::create($mockB);
+    $guzzle = new GuzzleClient(['handler' => $stack]);
+
+    /** @var \Drupal\Core\File\FileSystemInterface $fileSystem */
+    $fileSystem = $this->container->get('file_system');
+    $downloader = new SlackFileDownloader($guzzle, $fileSystem, new NullLogger());
+
+    $exporter = new ChannelExporter(
+      new SlackFetcher(new CursorIterator(), new NullLogger()),
+      new CanonicalMessageFormatter(),
+      new ThreadFolder(),
+      $downloader,
+      new CanonicalJsonWriter($fileSystem, new NullLogger()),
+      new NullLogger(),
+    );
+
+    // Act.
+    $result = $exporter->exportChannel(
+      $client,
+      self::TEST_TOKEN,
+      ['id' => 'C3', 'name' => 'ext', 'type' => 'public_channel'],
+    );
+
+    // Assert: no file was downloaded → files count is 0.
+    $this->assertSame(0, $result['files'], 'No external file may be counted as downloaded.');
+
+    // Assert: written JSON preserves the original URL, local_path stays NULL.
+    $realPath = $fileSystem->realpath('public://slack_archive/latest/channels/C3.json');
+    $this->assertNotFalse($realPath);
+    $decoded = json_decode((string) file_get_contents((string) $realPath), TRUE);
+    $this->assertIsArray($decoded);
+    $file = $decoded['messages'][0]['files'][0];
+    $this->assertSame(
+      $externalUrl,
+      $file['url_private'],
+      'External url_private must be preserved (not REDACTED) so the file is recoverable.',
+    );
+    $this->assertNull(
+      $file['local_path'],
+      'local_path must stay NULL when the file was not downloaded.',
+    );
+  }
+
 }

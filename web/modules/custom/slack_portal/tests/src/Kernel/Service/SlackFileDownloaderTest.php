@@ -258,8 +258,9 @@ class SlackFileDownloaderTest extends KernelTestBase {
       'No request may be sent to a non-Slack host (token exfiltration / SSRF).',
     );
 
-    // Assert: contract preserved — the destination URI is still returned.
-    $this->assertSame($destUri, $result, 'download() must return the dest URI on skip.');
+    // Assert: skip is signalled to the caller via a NULL return so it can
+    // avoid recording a dangling local_path / REDACTing the real URL.
+    $this->assertNull($result, 'download() must return NULL when it skips a non-Slack host.');
 
     // Assert: nothing was written to disk for the skipped host.
     $realPath = $this->fileSystem->realpath($destUri);
@@ -291,7 +292,7 @@ class SlackFileDownloaderTest extends KernelTestBase {
     );
 
     $this->assertCount(0, $history, 'No request may be sent over http.');
-    $this->assertSame('public://slack_archive/latest/files/F8.png', $result);
+    $this->assertNull($result, 'download() must return NULL when it skips an http URL.');
   }
 
 }
