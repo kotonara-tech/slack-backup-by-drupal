@@ -263,4 +263,60 @@ class SlackFetcherTest extends UnitTestCase {
     $this->assertCount(0, $mock, 'The single response must be consumed.');
   }
 
+  /**
+   * Tests fetchReplies returns only reply messages, excluding the parent.
+   *
+   * Given a MockHandler queued with conversations.replies returning the parent
+   * (ts=1.0) followed by two replies (ts=2.0, ts=3.0),
+   * When fetchReplies() is called with channelId='C1' and threadTs='1.0',
+   * Then only the two replies are returned (parent is excluded),
+   * And the outgoing request carries ts=1.0 and channel=C1 in the query string.
+   */
+  public function testFetchRepliesReturnsOnlyReplies(): void {
+    $history = [];
+    $mock = new MockHandler([
+      new Response(200, [], '{"ok":true,"messages":[{"ts":"1.0","thread_ts":"1.0","text":"parent"},{"ts":"2.0","thread_ts":"1.0","text":"r1"},{"ts":"3.0","thread_ts":"1.0","text":"r2"}]}'),
+    ]);
+
+    $client = $this->buildClient($mock, $history);
+    $fetcher = new SlackFetcher(new CursorIterator(), new NullLogger());
+
+    // When.
+    $replies = $fetcher->fetchReplies($client, 'C1', '1.0');
+
+    // Then: only the two replies are returned (parent ts=1.0 excluded).
+    $this->assertCount(2, $replies, 'Parent must be excluded; only 2 replies returned.');
+    $this->assertSame('2.0', $replies[0]['ts'], 'First reply must have ts=2.0.');
+    $this->assertSame('3.0', $replies[1]['ts'], 'Second reply must have ts=3.0.');
+
+    // And: outgoing request carried correct query params.
+    $this->assertCount(1, $history, 'Exactly one request must have been made.');
+    parse_str($history[0]['request']->getUri()->getQuery(), $queryParams);
+    $this->assertSame('C1', $queryParams['channel'] ?? NULL, 'Request must carry channel=C1.');
+    $this->assertSame('1.0', $queryParams['ts'] ?? NULL, 'Request must carry ts=1.0.');
+  }
+
+  /**
+   * Tests fetchReplies returns an empty array when only the parent is present.
+   *
+   * Given a MockHandler queued with conversations.replies returning only the
+   * parent message (no replies),
+   * When fetchReplies() is called,
+   * Then an empty array is returned.
+   */
+  public function testFetchRepliesReturnsEmptyArrayWhenNoReplies(): void {
+    $mock = new MockHandler([
+      new Response(200, [], '{"ok":true,"messages":[{"ts":"1.0","thread_ts":"1.0","text":"parent"}]}'),
+    ]);
+
+    $client = $this->buildClient($mock);
+    $fetcher = new SlackFetcher(new CursorIterator(), new NullLogger());
+
+    // When.
+    $replies = $fetcher->fetchReplies($client, 'C1', '1.0');
+
+    // Then: no replies; the only message was the parent.
+    $this->assertSame([], $replies, 'No replies must return an empty array.');
+  }
+
 }
