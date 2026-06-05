@@ -10,9 +10,11 @@ declare(strict_types=1);
 namespace Drupal\Tests\slack_portal\Kernel\Form;
 
 use Drupal\Core\Form\FormState;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\key\Entity\Key;
+use Drupal\slack_portal\Form\SlackSettingsForm;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -28,7 +30,7 @@ use PHPUnit\Framework\Attributes\Group;
  *
  * @covers \Drupal\slack_portal\Form\SlackSettingsForm
  */
-#[CoversClass(\Drupal\slack_portal\Form\SlackSettingsForm::class)]
+#[CoversClass(SlackSettingsForm::class)]
 #[Group('slack_portal')]
 class SlackSettingsFormTest extends KernelTestBase {
 
@@ -107,10 +109,7 @@ class SlackSettingsFormTest extends KernelTestBase {
       'slack_user_token' => $plainToken,
     ]);
 
-    $this->container->get('form_builder')->submitForm(
-      \Drupal\slack_portal\Form\SlackSettingsForm::class,
-      $formState
-    );
+    $this->container->get('form_builder')->submitForm(SlackSettingsForm::class, $formState);
 
     /** @var \Drupal\Core\State\StateInterface $state */
     $state = $this->container->get('state');
@@ -157,17 +156,13 @@ class SlackSettingsFormTest extends KernelTestBase {
   public function testEmptyTokenKeepsExistingCiphertext(): void {
     // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
     $originalToken = 'xoxp-ui-entered'; // pragma: allowlist secret
-
     // Pre-store an encrypted token in State via a first submit.
     $firstState = new FormState();
     $firstState->setValues([
       'workspace_url' => 'https://old.slack.com',
       'slack_user_token' => $originalToken,
     ]);
-    $this->container->get('form_builder')->submitForm(
-      \Drupal\slack_portal\Form\SlackSettingsForm::class,
-      $firstState
-    );
+    $this->container->get('form_builder')->submitForm(SlackSettingsForm::class, $firstState);
 
     /** @var \Drupal\Core\State\StateInterface $state */
     $state = $this->container->get('state');
@@ -180,10 +175,7 @@ class SlackSettingsFormTest extends KernelTestBase {
       'workspace_url' => 'https://new.slack.com',
       'slack_user_token' => '',
     ]);
-    $this->container->get('form_builder')->submitForm(
-      \Drupal\slack_portal\Form\SlackSettingsForm::class,
-      $secondState
-    );
+    $this->container->get('form_builder')->submitForm(SlackSettingsForm::class, $secondState);
 
     $cipherAfter = $state->get('slack_portal.token_ciphertext');
 
@@ -223,7 +215,6 @@ class SlackSettingsFormTest extends KernelTestBase {
   public function testBuildFormShowsSetStatusWithoutRevealingToken(): void {
     // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
     $plainToken = 'xoxp-ui-entered'; // pragma: allowlist secret
-
     // Store a ciphertext in State first.
     /** @var \Drupal\encrypt\EncryptServiceInterface $encryptService */
     $encryptService = $this->container->get('encryption');
@@ -231,9 +222,7 @@ class SlackSettingsFormTest extends KernelTestBase {
     $this->container->get('state')->set('slack_portal.token_ciphertext', $cipher);
 
     // Build the form.
-    $form = $this->container->get('form_builder')->getForm(
-      \Drupal\slack_portal\Form\SlackSettingsForm::class
-    );
+    $form = $this->container->get('form_builder')->getForm(SlackSettingsForm::class);
 
     // Assertion 5: token field default value is empty (not the real token).
     $tokenFieldValue = $form['slack_user_token']['#default_value'] ?? '';
@@ -245,13 +234,13 @@ class SlackSettingsFormTest extends KernelTestBase {
 
     // The description must signal "設定済み".
     $description = $form['slack_user_token']['#description'] ?? '';
-    if ($description instanceof \Drupal\Core\StringTranslation\TranslatableMarkup) {
+    if ($description instanceof TranslatableMarkup) {
       $description = (string) $description;
     }
     $this->assertStringContainsString(
       '設定済み',
       (string) $description,
-      'The token field description must indicate "設定済み" when a ciphertext is stored.'
+      'Token field description must indicate "設定済み" when a ciphertext is stored.'
     );
   }
 
@@ -265,16 +254,12 @@ class SlackSettingsFormTest extends KernelTestBase {
   public function testPlaintextTokenNeverStoredInStateOrConfig(): void {
     // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
     $plainToken = 'xoxp-ui-entered'; // pragma: allowlist secret
-
     $formState = new FormState();
     $formState->setValues([
       'workspace_url' => 'https://acme.slack.com',
       'slack_user_token' => $plainToken,
     ]);
-    $this->container->get('form_builder')->submitForm(
-      \Drupal\slack_portal\Form\SlackSettingsForm::class,
-      $formState
-    );
+    $this->container->get('form_builder')->submitForm(SlackSettingsForm::class, $formState);
 
     /** @var \Drupal\Core\State\StateInterface $state */
     $state = $this->container->get('state');
