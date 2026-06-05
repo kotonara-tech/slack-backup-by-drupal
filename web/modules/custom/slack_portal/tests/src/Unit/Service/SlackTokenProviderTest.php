@@ -27,13 +27,27 @@ class SlackTokenProviderTest extends UnitTestCase {
   /**
    * Fake Slack user token used only in tests (never a real credential).
    *
+   * The value is a test-only placeholder; the pragma on the const line
+   * prevents detect-secrets from flagging it as a real credential.
+   *
    * @var string
    */
   // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar,DrupalPractice.Commenting.CommentEmptyLine.SpacingAfter
   private const TEST_TOKEN = 'xoxp-test-token'; // pragma: allowlist secret
 
   /**
-   * Saves the original env value so tests can restore it.
+   * Alternate fake token used to test Settings-over-env precedence.
+   *
+   * Only used in testSettingsTakesPrecedenceOverEnvForToken(). Never a real
+   * credential; the pragma prevents detect-secrets from flagging it.
+   *
+   * @var string
+   */
+  // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar,DrupalPractice.Commenting.CommentEmptyLine.SpacingAfter
+  private const ALT_TOKEN = 'xoxp-env-alt-tok'; // pragma: allowlist secret
+
+  /**
+   * Saves the original env token value so tests can restore it.
    *
    * @var string|false
    */
@@ -45,7 +59,7 @@ class SlackTokenProviderTest extends UnitTestCase {
   protected function setUp(): void {
     parent::setUp();
     $this->originalEnvToken = getenv('SLACK_USER_TOKEN');
-    // Clear env var before each test so Settings is the only source.
+    // Clear env vars before each test so Settings is the only source.
     putenv('SLACK_USER_TOKEN');
     putenv('SLACK_EXPORT_SINCE_DAYS');
     putenv('SLACK_RATE_LIMIT_MAX_RETRIES');
@@ -75,12 +89,10 @@ class SlackTokenProviderTest extends UnitTestCase {
    * Then the token value is returned unchanged.
    */
   public function testGetTokenReturnsSettingsToken(): void {
-    $settings = new Settings([
-      'slack_user_token' => self::TEST_TOKEN, // pragma: allowlist secret
-    ]);
+    $settings = new Settings(['slack_user_token' => self::TEST_TOKEN]);
     $provider = new SlackTokenProvider($settings);
 
-    $this->assertSame(self::TEST_TOKEN, $provider->getToken()); // pragma: allowlist secret
+    $this->assertSame(self::TEST_TOKEN, $provider->getToken());
   }
 
   /**
@@ -92,11 +104,11 @@ class SlackTokenProviderTest extends UnitTestCase {
    * Then the env var value is returned.
    */
   public function testGetTokenFallsBackToEnvVar(): void {
-    putenv('SLACK_USER_TOKEN=' . self::TEST_TOKEN); // pragma: allowlist secret
+    putenv('SLACK_USER_TOKEN=' . self::TEST_TOKEN);
     $settings = new Settings([]);
     $provider = new SlackTokenProvider($settings);
 
-    $this->assertSame(self::TEST_TOKEN, $provider->getToken()); // pragma: allowlist secret
+    $this->assertSame(self::TEST_TOKEN, $provider->getToken());
   }
 
   /**
@@ -198,7 +210,7 @@ class SlackTokenProviderTest extends UnitTestCase {
   }
 
   /**
-   * Tests that getMaxRetries() returns 10 by default when nothing is configured.
+   * Tests that getMaxRetries() returns 10 by default.
    *
    * Given Settings has no slack_rate_limit_max_retries and env is unset,
    * When getMaxRetries() is called,
@@ -264,13 +276,12 @@ class SlackTokenProviderTest extends UnitTestCase {
    * Then the Settings value is returned (Settings wins).
    */
   public function testSettingsTakesPrecedenceOverEnvForToken(): void {
-    putenv('SLACK_USER_TOKEN=xoxp-env-token'); // pragma: allowlist secret
-    $settings = new Settings([
-      'slack_user_token' => self::TEST_TOKEN, // pragma: allowlist secret
-    ]);
+    // Set a competing env token; Settings must win.
+    putenv('SLACK_USER_TOKEN=' . self::ALT_TOKEN);
+    $settings = new Settings(['slack_user_token' => self::TEST_TOKEN]);
     $provider = new SlackTokenProvider($settings);
 
-    $this->assertSame(self::TEST_TOKEN, $provider->getToken()); // pragma: allowlist secret
+    $this->assertSame(self::TEST_TOKEN, $provider->getToken());
   }
 
   /**
@@ -281,12 +292,10 @@ class SlackTokenProviderTest extends UnitTestCase {
    * Then the trimmed value is returned.
    */
   public function testGetTokenTrimsWhitespace(): void {
-    $settings = new Settings([
-      'slack_user_token' => '  ' . self::TEST_TOKEN . '  ', // pragma: allowlist secret
-    ]);
+    $settings = new Settings(['slack_user_token' => '  ' . self::TEST_TOKEN . '  ']);
     $provider = new SlackTokenProvider($settings);
 
-    $this->assertSame(self::TEST_TOKEN, $provider->getToken()); // pragma: allowlist secret
+    $this->assertSame(self::TEST_TOKEN, $provider->getToken());
   }
 
 }
