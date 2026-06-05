@@ -157,4 +157,29 @@ class SlackTokenProviderEncryptTest extends KernelTestBase {
     $this->assertSame($settingsToken, $provider->getToken());
   }
 
+  /**
+   * Tests that a decrypted token with trailing whitespace is trimmed.
+   *
+   * A token pasted into the admin form with a trailing newline must not break
+   * the Authorization header; the decrypt resolver trims like Settings/env do.
+   */
+  public function testDecryptedTokenIsTrimmed(): void {
+    // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
+    $plaintext = 'xoxp-trim-me'; // pragma: allowlist secret
+    /** @var \Drupal\encrypt\EncryptServiceInterface $encryptService */
+    $encryptService = $this->container->get('encryption');
+    // Encrypt the token WITH a trailing newline (as a careless paste would).
+    $cipher = $encryptService->encrypt($plaintext . "\n", $this->profile);
+    $this->container->get('state')->set('slack_portal.token_ciphertext', $cipher);
+
+    putenv('SLACK_USER_TOKEN');
+    $provider = $this->buildProvider(new Settings([]));
+
+    $this->assertSame(
+      $plaintext,
+      $provider->getToken(),
+      'Decrypted token must be trimmed to match Settings/env resolvers.',
+    );
+  }
+
 }
