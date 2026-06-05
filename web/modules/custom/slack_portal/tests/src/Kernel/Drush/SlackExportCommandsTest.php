@@ -43,7 +43,7 @@ use Psr\Log\NullLogger;
  * MockHandler response ORDER (must match command's actual call sequence):
  *  1. users.list (U1 alice)
  *  2. conversations.list (C1 public + D1 im)
- *  3. conversations.history for C1 (parent ts=1.0 with reply_count=1 + standalone ts=9.0)
+ *  3. conversations.history C1 (parent ts=1.0 reply_count=1; standalone ts=9.0)
  *  4. conversations.replies for C1 thread ts=1.0 (parent+reply)
  *  5. conversations.history for D1 (1 plain message, no thread)
  *  6. files.list (empty)
@@ -72,13 +72,9 @@ class SlackExportCommandsTest extends KernelTestBase {
   /**
    * Builds the fixture MockHandler with responses in the exact call order.
    *
-   * Order:
-   *  1. users.list
-   *  2. conversations.list
-   *  3. conversations.history C1
-   *  4. conversations.replies C1 thread 1.0
-   *  5. conversations.history D1
-   *  6. files.list
+   * Order: (1) users.list, (2) conversations.list, (3) conversations.history
+   * C1, (4) conversations.replies C1 thread 1.0, (5) conversations.history D1,
+   * (6) files.list.
    *
    * @return \GuzzleHttp\Handler\MockHandler
    *   The fixture MockHandler with all ordered responses.
@@ -124,7 +120,7 @@ class SlackExportCommandsTest extends KernelTestBase {
       'response_metadata' => ['next_cursor' => ''],
     ]);
 
-    // C1 history: thread-root parent (ts=1.0, reply_count=1) + standalone (ts=9.0).
+    // C1 history: thread-root parent (ts=1.0, reply_count=1) + standalone.
     $c1HistoryResponse = json_encode([
       'ok' => TRUE,
       'messages' => [
@@ -144,7 +140,7 @@ class SlackExportCommandsTest extends KernelTestBase {
       'response_metadata' => ['next_cursor' => ''],
     ]);
 
-    // C1 replies for ts=1.0: parent + one reply (parent is filtered by fetchReplies).
+    // C1 replies for ts=1.0: parent + one reply (parent filtered out).
     $c1RepliesResponse = json_encode([
       'ok' => TRUE,
       'messages' => [
@@ -204,7 +200,7 @@ class SlackExportCommandsTest extends KernelTestBase {
   private function buildCommand(MockHandler $mockHandler): SlackExportCommands {
     // Anonymous subclass of SlackClientFactory: overrides create() to use our
     // MockHandler instead of the real Guzzle transport.
-    $factory = new class extends SlackClientFactory {
+    $factory = new class() extends SlackClientFactory {
 
       /** @var \GuzzleHttp\Handler\MockHandler|null */
       public ?MockHandler $h = NULL;
@@ -219,9 +215,9 @@ class SlackExportCommandsTest extends KernelTestBase {
     };
     $factory->h = $mockHandler;
 
-    // Settings with the test token.
+    // Settings with the test token (TEST_TOKEN is a placeholder only).
     $tokenProvider = new SlackTokenProvider(
-      new Settings(['slack_user_token' => self::TEST_TOKEN]) // pragma: allowlist secret
+      new Settings(['slack_user_token' => self::TEST_TOKEN])
     );
 
     $fetcher = new SlackFetcher(new CursorIterator(), new NullLogger());
@@ -271,14 +267,14 @@ class SlackExportCommandsTest extends KernelTestBase {
    *
    * Then:
    *   1. Returns 0 (EXIT_SUCCESS).
-   *   2. users.json exists, decodes to 1 user with id=U1, display_name=al, email=a@x.test.
+   *   2. users.json: 1 user; id=U1, display_name=al, email=a@x.test.
    *   3. channels/C1.json: type public_channel; 2 top-level messages;
-   *      parent ts=1.0 has replies with reply ts=2.0; standalone ts=9.0 present.
+   *      parent ts=1.0 has replies with reply ts=2.0; standalone ts=9.0.
    *   4. channels/D1.json: type im; 1 top-level message.
-   *   5. manifest.json: counts.channels=2, counts.users=1, counts.messages>=3;
-   *      channels index lists both with file paths.
-   *   6. Idempotency: re-running with fresh fixtures produces byte-identical C1.json.
-   *   7. Token does NOT appear in any file under public://slack_archive/latest/.
+   *   5. manifest.json: counts.channels=2, counts.users=1, messages>=3;
+   *      channels index lists both C1 and D1 with file keys.
+   *   6. Idempotency: re-running with fresh fixtures gives identical C1.json.
+   *   7. Token does NOT appear in any archive file.
    */
   public function testExportFullWorkspace(): void {
     // --- Arrange ---
