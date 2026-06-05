@@ -4,7 +4,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { createElement } from "react";
 
-import { useExportStatus } from "@/lib/hooks/useExportStatus";
+import {
+  useExportStatus,
+  EXPORT_STATUS_QUERY_KEY,
+} from "@/lib/hooks/useExportStatus";
 import { useTriggerExport } from "@/lib/hooks/useTriggerExport";
 import * as api from "@/lib/slack-portal";
 import type { ExportStatus } from "@/lib/slack-portal";
@@ -66,5 +69,26 @@ describe("Slack Portal hooks", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(api.triggerExport).toHaveBeenCalledTimes(1);
+  });
+
+  it("useTriggerExport は成功時に status クエリを invalidate する", async () => {
+    vi.mocked(api.triggerExport).mockResolvedValue({
+      status: "queued",
+      queued: 1,
+      users: 1,
+    });
+    const { wrapper, queryClient } = createWrapper();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    const { result } = renderHook(() => useTriggerExport(), { wrapper });
+
+    act(() => {
+      result.current.mutate();
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: EXPORT_STATUS_QUERY_KEY }),
+    );
   });
 });
