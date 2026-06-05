@@ -120,6 +120,7 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
     /** @var \Drupal\slack_portal\Service\ChannelExporter&\PHPUnit\Framework\MockObject\MockObject $channelExporter */
     $channelExporter = $this->createMock(ChannelExporter::class);
     $channelExporter
+      ->expects($this->once())
       ->method('exportChannel')
       ->willReturn(['messages' => 3]);
 
@@ -168,6 +169,8 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
 
     $decoded = json_decode((string) file_get_contents((string) $realPath), TRUE);
     $this->assertIsArray($decoded);
+    $this->assertSame(1, $decoded['schema_version']);
+    $this->assertArrayHasKey('generated_at', $decoded, 'manifest must have generated_at.');
     $this->assertSame(1, $decoded['counts']['channels']);
     $this->assertSame(3, $decoded['counts']['messages']);
     $this->assertSame(4, $decoded['counts']['users']);
@@ -193,6 +196,7 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
     /** @var \Drupal\slack_portal\Service\ChannelExporter&\PHPUnit\Framework\MockObject\MockObject $channelExporter */
     $channelExporter = $this->createMock(ChannelExporter::class);
     $channelExporter
+      ->expects($this->once())
       ->method('exportChannel')
       ->willReturn(['messages' => 5]);
 
