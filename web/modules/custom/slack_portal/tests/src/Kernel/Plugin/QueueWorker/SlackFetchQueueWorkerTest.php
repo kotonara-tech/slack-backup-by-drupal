@@ -83,6 +83,9 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
       $this->container->get('encrypt.encryption_profile.manager'),
     );
 
+    /** @var \Drupal\Core\Queue\QueueFactory $queueFactory */
+    $queueFactory = $this->container->get('queue');
+
     return new SlackFetchQueueWorker(
       [],
       'slack_portal_fetch',
@@ -94,6 +97,7 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
       $stateService,
       $this->container->get('datetime.time'),
       new NullLogger(),
+      $queueFactory,
     );
   }
 
@@ -249,6 +253,95 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
       // Realpath returns FALSE when the file does not exist — that is correct.
       $this->assertTrue(TRUE, 'manifest.json does not exist as expected.');
     }
+  }
+
+  /**
+   * Tests a per-channel failure is re-enqueued (bounded) without throwing.
+   *
+   * On a transient failure with attempts left, the worker must re-enqueue the
+   * item with an incremented attempt count, keep status 'running', not mark
+   * the channel failed, and NOT re-throw (so the original item is consumed).
+   */
+  public function testFailedChannelIsReEnqueuedWithinMaxAttempts(): void {
+    $mockSlackClient = $this->createMock(SlackApiClient::class);
+    /** @var \Drupal\slack_portal\Service\SlackClientFactory&\PHPUnit\Framework\MockObject\MockObject $clientFactory */
+    $clientFactory = $this->createMock(SlackClientFactory::class);
+    $clientFactory->method('create')->willReturn($mockSlackClient);
+
+    /** @var \Drupal\slack_portal\Service\ChannelExporter&\PHPUnit\Framework\MockObject\MockObject $channelExporter */
+    $channelExporter = $this->createMock(ChannelExporter::class);
+    $channelExporter->method('exportChannel')
+      ->willThrowException(new \RuntimeException('transient'));
+
+    $stateService = new ExportStateService(
+      $this->container->get('state'),
+      $this->container->get('datetime.time'),
+    );
+    /** @var \Drupal\Core\File\FileSystemInterface $fileSystem */
+    $fileSystem = $this->container->get('file_system');
+    $jsonWriter = new CanonicalJsonWriter($fileSystem, new NullLogger());
+    $stateService->start(1, 0);
+
+    $worker = $this->buildWorker($clientFactory, $channelExporter, $stateService, $jsonWriter);
+
+    // Attempt 0 → re-enqueue with attempt 1, no throw.
+    $worker->processItem([
+      'channel_meta' => ['id' => 'C1', 'name' => 'g', 'type' => 'public_channel'],
+      'attempt' => 0,
+    ]);
+
+    /** @var \Drupal\Core\Queue\QueueFactory $queueFactory */
+    $queueFactory = $this->container->get('queue');
+    $queue = $queueFactory->get('slack_portal_fetch');
+    $this->assertSame(1, $queue->numberOfItems(), 'Failed channel must be re-enqueued.');
+
+    $status = $stateService->getStatus();
+    $this->assertSame('running', $status['status'], 'Status stays running during retries.');
+    $this->assertSame(0, $status['failed'], 'Channel is not marked failed while retries remain.');
+  }
+
+  /**
+   * Tests a channel that fails after the max attempts ends the run as 'error'.
+   *
+   * On the final attempt the worker records the failure (no re-enqueue), and
+   * when that completes the run, finish() yields terminal status 'error'.
+   */
+  public function testChannelFailsAfterMaxAttempts(): void {
+    $mockSlackClient = $this->createMock(SlackApiClient::class);
+    /** @var \Drupal\slack_portal\Service\SlackClientFactory&\PHPUnit\Framework\MockObject\MockObject $clientFactory */
+    $clientFactory = $this->createMock(SlackClientFactory::class);
+    $clientFactory->method('create')->willReturn($mockSlackClient);
+
+    /** @var \Drupal\slack_portal\Service\ChannelExporter&\PHPUnit\Framework\MockObject\MockObject $channelExporter */
+    $channelExporter = $this->createMock(ChannelExporter::class);
+    $channelExporter->method('exportChannel')
+      ->willThrowException(new \RuntimeException('permanent'));
+
+    $stateService = new ExportStateService(
+      $this->container->get('state'),
+      $this->container->get('datetime.time'),
+    );
+    /** @var \Drupal\Core\File\FileSystemInterface $fileSystem */
+    $fileSystem = $this->container->get('file_system');
+    $jsonWriter = new CanonicalJsonWriter($fileSystem, new NullLogger());
+    $stateService->start(1, 0);
+
+    $worker = $this->buildWorker($clientFactory, $channelExporter, $stateService, $jsonWriter);
+
+    // Final attempt (attempt 2 of max 3) → give up, no re-enqueue.
+    $worker->processItem([
+      'channel_meta' => ['id' => 'C1', 'name' => 'g', 'type' => 'public_channel'],
+      'attempt' => 2,
+    ]);
+
+    /** @var \Drupal\Core\Queue\QueueFactory $queueFactory */
+    $queueFactory = $this->container->get('queue');
+    $queue = $queueFactory->get('slack_portal_fetch');
+    $this->assertSame(0, $queue->numberOfItems(), 'No re-enqueue after max attempts.');
+
+    $status = $stateService->getStatus();
+    $this->assertSame(1, $status['failed']);
+    $this->assertSame('error', $status['status'], 'Run ends as error when a channel ultimately fails.');
   }
 
 }
