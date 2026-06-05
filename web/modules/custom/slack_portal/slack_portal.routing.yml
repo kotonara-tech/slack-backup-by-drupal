@@ -1,0 +1,24 @@
+slack_portal.settings:
+  path: '/admin/config/services/slack-portal'
+  defaults:
+    _form: '\Drupal\slack_portal\Form\SlackSettingsForm'
+    _title: 'Slack Portal'
+  requirements:
+    _permission: 'administer slack_portal'
+
+slack_portal.api.export:
+  path: '/api/slack-portal/export'
+  defaults:
+    _controller: '\Drupal\slack_portal\Controller\SlackPortalApiController::triggerExport'
+  methods: [POST]
+  requirements:
+    _permission: 'administer slack_portal'
+    _csrf_request_header_token: 'TRUE'
+
+slack_portal.api.status:
+  path: '/api/slack-portal/status'
+  defaults:
+    _controller: '\Drupal\slack_portal\Controller\SlackPortalApiController::status'
+  methods: [GET]
+  requirements:
+    _permission: 'administer slack_portal'

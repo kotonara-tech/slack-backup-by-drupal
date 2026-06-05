@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-06-01
 decision-makers: [Ryuto]
 consulted: []
@@ -30,7 +30,8 @@ informed: [dev team]
 - cursor/backoff/stream DL を自前実装（SDK は薄い）。Slack 公式 SDK の一級は Python。
 
 ## Confirmation
-- [ ] `ddev drush slack:export --since=90d` が canonical JSON を生成（Milestone 1, large テスト）。
+- [x] `ddev drush slack:export --since=90d` が canonical JSON を生成（Milestone 1 で検証済み: `tests/src/Kernel/Drush/SlackExportCommandsTest`、fake workspace で全チャンネル種別＋thread 畳込＋reactions＋files、2 回実行で byte 同一）。
+- [x] cursor pagination / 429 backoff / `url_private` の Bearer+stream DL を Unit/Kernel テストで検証（`CursorIteratorTest`・`SlackFetcherTest`・`SlackFileDownloaderTest`）。
 
 ## More Information
 - `.claude/rules/slack-export-safety.md`。Slack rate limits 変更(2025-05-29)。関連: ADR-0004, ADR-0009。

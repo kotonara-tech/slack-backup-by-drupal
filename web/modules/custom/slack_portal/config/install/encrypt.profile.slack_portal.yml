@@ -1,0 +1,12 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - key.key.slack_portal_encryption
+  module:
+    - real_aes
+id: slack_portal
+label: 'Slack Portal Encryption Profile'
+encryption_method: real_aes
+encryption_method_configuration: {}
+encryption_key: slack_portal_encryption

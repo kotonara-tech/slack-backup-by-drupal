@@ -1,3 +1,58 @@
 # Slack Portal のサービス定義。
 # SlackClientFactory / SlackFetcher / CanonicalJsonWriter 等は Milestone 1 で TDD により追加する。
-services: {}
+services:
+  slack_portal.token_provider:
+    class: Drupal\slack_portal\Service\SlackTokenProvider
+    arguments: ['@settings', '@state', '@encryption', '@encrypt.encryption_profile.manager']
+
+  slack_portal.client_factory:
+    class: Drupal\slack_portal\Service\SlackClientFactory
+
+  slack_portal.cursor_iterator:
+    class: Drupal\slack_portal\Service\CursorIterator
+
+  slack_portal.message_formatter:
+    class: Drupal\slack_portal\Service\CanonicalMessageFormatter
+
+  slack_portal.thread_folder:
+    class: Drupal\slack_portal\Service\ThreadFolder
+
+  logger.channel.slack_portal:
+    parent: logger.channel_base
+    arguments: ['slack_portal']
+
+  slack_portal.fetcher:
+    class: Drupal\slack_portal\Service\SlackFetcher
+    arguments: ['@slack_portal.cursor_iterator', '@logger.channel.slack_portal']
+
+  slack_portal.file_downloader:
+    class: Drupal\slack_portal\Service\SlackFileDownloader
+    arguments: ['@http_client', '@file_system', '@logger.channel.slack_portal']
+
+  slack_portal.json_writer:
+    class: Drupal\slack_portal\Service\CanonicalJsonWriter
+    arguments: ['@file_system', '@logger.channel.slack_portal']
+
+  slack_portal.channel_exporter:
+    class: Drupal\slack_portal\Service\ChannelExporter
+    arguments: ['@slack_portal.fetcher', '@slack_portal.message_formatter', '@slack_portal.thread_folder', '@slack_portal.file_downloader', '@slack_portal.json_writer', '@logger.channel.slack_portal']
+
+  slack_portal.export_state:
+    class: Drupal\slack_portal\Service\ExportStateService
+    arguments: ['@state', '@datetime.time']
+
+  slack_portal.workspace_mapper:
+    class: Drupal\slack_portal\Service\SlackWorkspaceMapper
+
+  slack_portal.export_trigger:
+    class: Drupal\slack_portal\Service\ExportTrigger
+    arguments:
+      - '@slack_portal.token_provider'
+      - '@slack_portal.client_factory'
+      - '@slack_portal.fetcher'
+      - '@slack_portal.workspace_mapper'
+      - '@slack_portal.json_writer'
+      - '@queue'
+      - '@slack_portal.export_state'
+      - '@datetime.time'
+      - '@logger.channel.slack_portal'

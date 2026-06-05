@@ -47,26 +47,26 @@ repos:
         stages: [pre-commit]
       - id: phpcs
         name: PHPCS（Drupal/DrupalPractice, ddev）
-        entry: bash -c 'command -v ddev >/dev/null 2>&1 && ddev exec vendor/bin/phpcs --standard=phpcs.xml web/modules/custom/slack_portal || echo "[skip] ddev 未導入のため PHPCS をスキップ"'
+        entry: bash -c 'if command -v ddev >/dev/null 2>&1; then ddev exec vendor/bin/phpcs --standard=phpcs.xml web/modules/custom/slack_portal; else echo "[skip] ddev 未導入のため PHPCS をスキップ"; fi'
         language: system
         files: ^web/modules/custom/slack_portal/.*\.(php|module|install|inc)$
         pass_filenames: false
         stages: [pre-commit]
       - id: phpstan
         name: PHPStan（level5, ddev）
-        entry: bash -c 'command -v ddev >/dev/null 2>&1 && ddev exec vendor/bin/phpstan analyze web/modules/custom/slack_portal -l 5 || echo "[skip] ddev 未導入のため PHPStan をスキップ"'
+        entry: bash -c 'if command -v ddev >/dev/null 2>&1; then ddev exec vendor/bin/phpstan analyze web/modules/custom/slack_portal -l 5; else echo "[skip] ddev 未導入のため PHPStan をスキップ"; fi'
         language: system
         pass_filenames: false
         stages: [pre-push]
       - id: phpunit-unit-kernel
         name: PHPUnit Unit+Kernel（ddev）
-        entry: bash -c 'command -v ddev >/dev/null 2>&1 && ddev exec vendor/bin/phpunit -c web/phpunit.xml --testsuite Unit,Kernel || echo "[skip] ddev 未導入のため PHPUnit をスキップ"'
+        entry: bash -c 'if command -v ddev >/dev/null 2>&1; then ddev exec vendor/bin/phpunit -c web/phpunit.xml --testsuite Unit,Kernel; else echo "[skip] ddev 未導入のため PHPUnit をスキップ"; fi'
         language: system
         pass_filenames: false
         stages: [pre-push]
       - id: vitest
         name: Vitest（frontend）
-        entry: bash -c 'cd frontend && (test -d node_modules && npx vitest run || echo "[skip] frontend 未セットアップのため Vitest をスキップ")'
+        entry: bash -c 'cd frontend && if test -d node_modules; then npx vitest run; else echo "[skip] frontend 未セットアップのため Vitest をスキップ"; fi'
         language: system
         pass_filenames: false
         stages: [pre-push]

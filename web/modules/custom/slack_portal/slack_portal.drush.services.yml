@@ -1,0 +1,13 @@
+services:
+  slack_portal.export_commands:
+    class: Drupal\slack_portal\Drush\Commands\SlackExportCommands
+    arguments:
+      - '@slack_portal.token_provider'
+      - '@slack_portal.client_factory'
+      - '@slack_portal.fetcher'
+      - '@slack_portal.channel_exporter'
+      - '@slack_portal.json_writer'
+      - '@logger.channel.slack_portal'
+      - '@slack_portal.workspace_mapper'
+    tags:
+      - { name: drush.command }
