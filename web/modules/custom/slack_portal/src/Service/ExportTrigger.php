@@ -83,6 +83,12 @@ class ExportTrigger {
    *   sensitive text before exposing it to the client.
    */
   public function trigger(): array {
+    // Guard against a duplicate run: a second POST (another tab, a retry, a
+    // direct call) must not reset counters mid-run or double-enqueue channels.
+    if ($this->stateService->getStatus()['status'] === 'running') {
+      throw new \RuntimeException('A Slack export is already running.');
+    }
+
     $token = $this->tokenProvider->getToken();
     $client = $this->clientFactory->create($token);
     $days = $this->tokenProvider->getSinceDays();
@@ -108,22 +114,42 @@ class ExportTrigger {
     }
 
     // --- Step 3: Start state ---
-    $this->stateService->start(count($channels), $userCount);
-
-    // --- Step 4: Enqueue one item per channel ---
-    $queue = $this->queueFactory->get('slack_portal_fetch');
-    foreach ($channels as $channelMeta) {
-      $queue->createItem([
-        'channel_meta' => $channelMeta,
-        'oldest' => $oldest,
-      ]);
-    }
-
     $channelCount = count($channels);
-    $this->logger->notice(
-      'ExportTrigger: queued {channels} channels for {days}d export.',
-      ['channels' => $channelCount, 'days' => $days],
-    );
+    $this->stateService->start($channelCount, $userCount);
+
+    // --- Step 4: Enqueue one item per channel (or finalise if empty) ---
+    if ($channels === []) {
+      // No exportable channels: there will be no queue worker run to write the
+      // manifest, so finalise inline instead of leaving status on 'running'.
+      $this->writer->writeManifest([
+        'schema_version' => 1,
+        'generated_at' => gmdate('Y-m-d\TH:i:s\Z', $this->time->getCurrentTime()),
+        'counts' => [
+          'channels' => 0,
+          'failed' => 0,
+          'messages' => 0,
+          'users' => $userCount,
+          'files' => 0,
+        ],
+        'channels' => [],
+      ]);
+      $this->stateService->finish();
+      $this->logger->notice('ExportTrigger: no channels to export; finished.');
+    }
+    else {
+      $queue = $this->queueFactory->get('slack_portal_fetch');
+      foreach ($channels as $channelMeta) {
+        $queue->createItem([
+          'channel_meta' => $channelMeta,
+          'oldest' => $oldest,
+          'attempt' => 0,
+        ]);
+      }
+      $this->logger->notice(
+        'ExportTrigger: queued {channels} channels for {days}d export.',
+        ['channels' => $channelCount, 'days' => $days],
+      );
+    }
 
     return [
       'queued' => $channelCount,

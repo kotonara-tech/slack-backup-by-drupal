@@ -315,6 +315,10 @@ class ExportTriggerTest extends KernelTestBase {
     $manifestPath = $fileSystem->realpath('public://slack_archive/latest/manifest.json');
     $this->assertNotFalse($manifestPath);
     $this->assertFileExists((string) $manifestPath);
+    $manifest = json_decode((string) file_get_contents((string) $manifestPath), TRUE);
+    $this->assertIsArray($manifest);
+    $this->assertSame(0, $manifest['counts']['channels']);
+    $this->assertSame(1, $manifest['counts']['users']);
   }
 
 }
