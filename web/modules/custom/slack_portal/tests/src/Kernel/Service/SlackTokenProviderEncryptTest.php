@@ -180,6 +180,11 @@ class SlackTokenProviderEncryptTest extends KernelTestBase {
       $provider->getToken(),
       'Decrypted token must be trimmed to match Settings/env resolvers.',
     );
+    $this->assertStringNotContainsString(
+      "\n",
+      $provider->getToken(),
+      'No trailing newline may survive in the resolved token.',
+    );
   }
 
 }

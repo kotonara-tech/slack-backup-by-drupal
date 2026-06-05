@@ -93,7 +93,12 @@ final class SlackTokenProvider {
       $profile = $this->profileManager->getEncryptionProfile($this->encryptionProfileId);
       if ($profile !== NULL) {
         try {
-          return (string) $this->encryption->decrypt($cipher, $profile);
+          // Trim like the Settings/env resolvers so a pasted trailing newline
+          // does not corrupt the Authorization header.
+          $decrypted = trim((string) $this->encryption->decrypt($cipher, $profile));
+          if ($decrypted !== '') {
+            return $decrypted;
+          }
         }
         catch (\Throwable) {
           // Do NOT log the cipher or any partial token value.
