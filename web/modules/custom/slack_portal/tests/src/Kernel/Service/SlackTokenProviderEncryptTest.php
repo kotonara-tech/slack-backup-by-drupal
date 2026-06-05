@@ -11,6 +11,7 @@ namespace Drupal\Tests\slack_portal\Kernel\Service;
 
 use Drupal\Core\Site\Settings;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\encrypt\EncryptionProfileInterface;
 use Drupal\encrypt\Entity\EncryptionProfile;
 use Drupal\key\Entity\Key;
 use Drupal\slack_portal\Service\SlackTokenProvider;
@@ -43,7 +44,7 @@ class SlackTokenProviderEncryptTest extends KernelTestBase {
    *
    * @var \Drupal\encrypt\EncryptionProfileInterface
    */
-  private \Drupal\encrypt\EncryptionProfileInterface $profile;
+  private EncryptionProfileInterface $profile;
 
   /**
    * {@inheritdoc}
@@ -52,15 +53,16 @@ class SlackTokenProviderEncryptTest extends KernelTestBase {
     parent::setUp();
 
     // Create a 256-bit config-provider key for real_aes (32 bytes required).
-    // The key value is a test-only placeholder.
+    // The key value is a test-only placeholder; pragma suppresses secret scan.
+    // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
+    $keyValue = 'mustbesixteenbitmustbesixteenbit'; // pragma: allowlist secret
     Key::create([
       'id' => 'slack_portal_enc_test',
       'label' => 'Slack Portal Test Key',
       'key_type' => 'encryption',
       'key_type_settings' => ['key_size' => '256'],
       'key_provider' => 'config',
-      // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
-      'key_provider_settings' => ['key_value' => 'mustbesixteenbitmustbesixteenbit'], // pragma: allowlist secret
+      'key_provider_settings' => ['key_value' => $keyValue],
     ])->save();
 
     // Create the encryption profile pointing at that key.
@@ -99,17 +101,15 @@ class SlackTokenProviderEncryptTest extends KernelTestBase {
    * Tests that a token stored as a ciphertext in State is correctly decrypted.
    *
    * Given the encryption service encrypts a plaintext token using the
-   *   slack_portal profile,
-   * And the resulting ciphertext is stored in State 'slack_portal.token_ciphertext',
+   *   slack_portal profile, And the ciphertext is stored in Drupal State,
    * And Settings and env vars have no token configured,
    * When getToken() is called,
    * Then the original plaintext token is returned,
-   * And the stored State value is NOT the plaintext (encryption is at rest).
+   * And the stored State value is NOT the plaintext (encryption at rest).
    */
   public function testDecryptsTokenFromState(): void {
     // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
     $plaintext = 'xoxp-secret-from-ui'; // pragma: allowlist secret
-
     /** @var \Drupal\encrypt\EncryptServiceInterface $encryptService */
     $encryptService = $this->container->get('encryption');
     $cipher = $encryptService->encrypt($plaintext, $this->profile);
@@ -144,14 +144,15 @@ class SlackTokenProviderEncryptTest extends KernelTestBase {
     $settingsToken = 'xoxp-from-settings'; // pragma: allowlist secret
     // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
     $stateToken = 'xoxp-from-state'; // pragma: allowlist secret
-
     /** @var \Drupal\encrypt\EncryptServiceInterface $encryptService */
     $encryptService = $this->container->get('encryption');
     $cipher = $encryptService->encrypt($stateToken, $this->profile);
     $this->container->get('state')->set('slack_portal.token_ciphertext', $cipher);
 
     putenv('SLACK_USER_TOKEN');
-    $provider = $this->buildProvider(new Settings(['slack_user_token' => $settingsToken]));
+    $provider = $this->buildProvider(
+      new Settings(['slack_user_token' => $settingsToken])
+    );
 
     $this->assertSame($settingsToken, $provider->getToken());
   }

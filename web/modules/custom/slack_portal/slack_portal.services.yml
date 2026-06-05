@@ -3,7 +3,7 @@
 services:
   slack_portal.token_provider:
     class: Drupal\slack_portal\Service\SlackTokenProvider
-    arguments: ['@settings']
+    arguments: ['@settings', '@state', '@encryption', '@encrypt.encryption_profile.manager']
 
   slack_portal.client_factory:
     class: Drupal\slack_portal\Service\SlackClientFactory

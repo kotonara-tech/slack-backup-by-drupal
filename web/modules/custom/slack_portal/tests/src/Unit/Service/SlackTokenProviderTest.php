@@ -89,7 +89,7 @@ class SlackTokenProviderTest extends UnitTestCase {
     putenv('SLACK_EXPORT_SINCE_DAYS');
     putenv('SLACK_RATE_LIMIT_MAX_RETRIES');
 
-    // State returns null by default — encryption never called in Settings/env path.
+    // State returns null — encryption never called in Settings/env path.
     $this->state = $this->createMock(StateInterface::class);
     $this->state->method('get')->willReturn(NULL);
 
@@ -237,7 +237,7 @@ class SlackTokenProviderTest extends UnitTestCase {
   }
 
   /**
-   * Tests that a decrypt exception wraps as RuntimeException without ciphertext.
+   * Tests that a decrypt exception wraps as RuntimeException without cipher.
    *
    * Given State has a ciphertext and the profile is found,
    * And encryption->decrypt() throws,

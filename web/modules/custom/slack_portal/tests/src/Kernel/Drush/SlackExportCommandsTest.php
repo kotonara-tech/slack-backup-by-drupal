@@ -10,7 +10,10 @@ declare(strict_types=1);
 namespace Drupal\Tests\slack_portal\Kernel\Drush;
 
 use Drupal\Core\Site\Settings;
+use Drupal\Core\State\StateInterface;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\encrypt\EncryptionProfileManagerInterface;
+use Drupal\encrypt\EncryptServiceInterface;
 use Drupal\slack_portal\Drush\Commands\SlackExportCommands;
 use Drupal\slack_portal\Service\CanonicalJsonWriter;
 use Drupal\slack_portal\Service\CanonicalMessageFormatter;
@@ -216,8 +219,14 @@ class SlackExportCommandsTest extends KernelTestBase {
     $factory->h = $mockHandler;
 
     // Settings with the test token (TEST_TOKEN is a placeholder only).
+    // The encrypt deps are mocked because the Settings path is used here.
+    $state = $this->createMock(StateInterface::class);
+    $state->method('get')->willReturn(NULL);
     $tokenProvider = new SlackTokenProvider(
-      new Settings(['slack_user_token' => self::TEST_TOKEN])
+      new Settings(['slack_user_token' => self::TEST_TOKEN]),
+      $state,
+      $this->createMock(EncryptServiceInterface::class),
+      $this->createMock(EncryptionProfileManagerInterface::class),
     );
 
     $fetcher = new SlackFetcher(new CursorIterator(), new NullLogger());

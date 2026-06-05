@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 /**
  * @file
- * Resolves the Slack user token and related config from Settings / env vars.
+ * Resolves the Slack user token and related config from Settings / env / State.
  */
 
 namespace Drupal\slack_portal\Service;
 
 use Drupal\Core\Site\Settings;
+use Drupal\Core\State\StateInterface;
+use Drupal\encrypt\EncryptionProfileManagerInterface;
+use Drupal\encrypt\EncryptServiceInterface;
 
 /**
  * Resolves Slack credentials and export configuration.
@@ -17,10 +20,7 @@ use Drupal\Core\Site\Settings;
  * Resolution order (first non-empty wins):
  *  1. Drupal Settings (settings.local.php or settings.php).
  *  2. Environment variable.
- *
- * This class is designed for extension in Phase B, where a subclass (or
- * strategy list) will prepend a "Key module + Encrypt decrypt" resolver
- * before the Settings/env fallbacks below.
+ *  3. Drupal State — ciphertext encrypted via the drupal/encrypt module.
  *
  * SECRETS RULE: The token value must never appear in log messages or exception
  * messages. All thrown exceptions use generic, value-free text.
@@ -32,8 +32,25 @@ final class SlackTokenProvider {
    *
    * @param \Drupal\Core\Site\Settings $settings
    *   The Drupal site settings service.
+   * @param \Drupal\Core\State\StateInterface $state
+   *   The Drupal state service (stores the encrypted token ciphertext).
+   * @param \Drupal\encrypt\EncryptServiceInterface $encryption
+   *   The encrypt module encryption service.
+   * @param \Drupal\encrypt\EncryptionProfileManagerInterface $profileManager
+   *   The encrypt module encryption profile manager.
+   * @param string $encryptionProfileId
+   *   The ID of the encryption profile to use for decryption.
+   * @param string $tokenStateKey
+   *   The Drupal State key under which the ciphertext is stored.
    */
-  public function __construct(private readonly Settings $settings) {
+  public function __construct(
+    private readonly Settings $settings,
+    private readonly StateInterface $state,
+    private readonly EncryptServiceInterface $encryption,
+    private readonly EncryptionProfileManagerInterface $profileManager,
+    private readonly string $encryptionProfileId = 'slack_portal',
+    private readonly string $tokenStateKey = 'slack_portal.token_ciphertext',
+  ) {
   }
 
   /**
@@ -42,13 +59,14 @@ final class SlackTokenProvider {
    * Resolves in order:
    *  1. Settings key 'slack_user_token' (settings.local.php).
    *  2. Env var SLACK_USER_TOKEN.
+   *  3. Drupal State ciphertext, decrypted via drupal/encrypt.
    *
    * @return string
    *   The trimmed, non-empty Slack user token.
    *
    * @throws \RuntimeException
-   *   If no token is configured. The message intentionally omits the token
-   *   value to prevent credential leakage in logs.
+   *   If no token is configured, or if decryption fails. Messages
+   *   intentionally omit token/cipher values to prevent credential leakage.
    */
   public function getToken(): string {
     // Resolver 1: Drupal Settings (highest priority).
@@ -66,6 +84,21 @@ final class SlackTokenProvider {
       $token = trim($fromEnv);
       if ($token !== '') {
         return $token;
+      }
+    }
+
+    // Resolver 3: encrypted ciphertext in Drupal State.
+    $cipher = $this->state->get($this->tokenStateKey);
+    if (is_string($cipher) && $cipher !== '') {
+      $profile = $this->profileManager->getEncryptionProfile($this->encryptionProfileId);
+      if ($profile !== NULL) {
+        try {
+          return (string) $this->encryption->decrypt($cipher, $profile);
+        }
+        catch (\Throwable) {
+          // Do NOT log the cipher or any partial token value.
+          throw new \RuntimeException('Slack user token could not be decrypted.');
+        }
       }
     }
 
