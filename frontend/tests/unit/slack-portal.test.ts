@@ -84,6 +84,23 @@ describe("slack-portal API client", () => {
     );
   });
 
+  it("triggerExport は非 JSON の 403 でも分かるメッセージで throw する", async () => {
+    // CSRF/permission 失敗時、Drupal は非 JSON(プレーン/HTML)の 403 を返す。
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("csrf-xyz", { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response("X-CSRF-Token request header is invalid", {
+          status: 403,
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    // res.json() を res.ok チェック前に呼ぶと SyntaxError になってしまう。
+    // ステータスを含む分かりやすいメッセージを投げること。
+    await expect(triggerExport()).rejects.toThrow(/403/);
+  });
+
   it("fetchExportStatus は status JSON を credentials 付きで取得する", async () => {
     const status = {
       status: "running",
