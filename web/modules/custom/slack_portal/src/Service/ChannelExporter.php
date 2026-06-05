@@ -155,10 +155,7 @@ final class ChannelExporter {
         $urlPrivate = (string) $fileEntry['url_private'];
         $size = isset($fileEntry['size']) ? (int) $fileEntry['size'] : NULL;
 
-        // Derive extension from the filename; fall back to 'bin'.
-        $ext = pathinfo($name, PATHINFO_EXTENSION);
-        $ext = ($ext !== '' && $ext !== FALSE) ? strtolower((string) $ext) : 'bin';
-
+        $ext = $this->fileExtension($name);
         $relativePath = "files/{$id}.{$ext}";
         $destUri = "{$baseDir}/{$relativePath}";
 
@@ -173,6 +170,20 @@ final class ChannelExporter {
     }
     // Release by-reference binding.
     unset($message);
+  }
+
+  /**
+   * Derives a lowercase file extension from a filename, defaulting to 'bin'.
+   *
+   * @param string $filename
+   *   The filename (e.g. 'photo.PNG', 'document.pdf', 'noext').
+   *
+   * @return string
+   *   Lowercase extension ('png', 'pdf') or 'bin' when none is present.
+   */
+  private function fileExtension(string $filename): string {
+    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    return $ext !== '' ? $ext : 'bin';
   }
 
 }

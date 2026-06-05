@@ -314,4 +314,101 @@ class ChannelExporterTest extends KernelTestBase {
     );
   }
 
+  /**
+   * Tests that a file with an uppercase extension is saved with lowercase ext.
+   *
+   * Given a file named 'IMAGE.PNG' (uppercase extension),
+   * When exportChannel() downloads it,
+   * Then the local_path uses the lowercase extension 'png',
+   * And the file is written to files/F2.png (not files/F2.PNG).
+   */
+  public function testFileExtensionIsLowercased(): void {
+    // Arrange: history with a message whose file has an uppercase extension.
+    $historyBody = json_encode([
+      'ok' => TRUE,
+      'messages' => [
+        [
+          'ts' => '5.0',
+          'user' => 'U3',
+          'text' => 'uppercase ext',
+          'files' => [
+            [
+              'id' => 'F2',
+              'name' => 'IMAGE.PNG',
+              'mimetype' => 'image/png',
+              'url_private' => 'https://files.slack.com/F2',
+              'size' => 4,
+            ],
+          ],
+        ],
+      ],
+      'response_metadata' => ['next_cursor' => ''],
+    ]);
+
+    $mockA = new MockHandler([
+      new Response(
+        200,
+        ['Content-Type' => 'application/json'],
+        (string) $historyBody,
+      ),
+    ]);
+    $client = (new SlackClientFactory())->createWithHandler(
+      $mockA,
+      self::TEST_TOKEN,
+    );
+
+    $mockB = new MockHandler([new Response(200, [], 'DATA')]);
+    $stack = HandlerStack::create($mockB);
+    $guzzle = new GuzzleClient(['handler' => $stack]);
+
+    /** @var \Drupal\Core\File\FileSystemInterface $fileSystem */
+    $fileSystem = $this->container->get('file_system');
+    $downloader = new SlackFileDownloader(
+      $guzzle,
+      $fileSystem,
+      new NullLogger(),
+    );
+
+    $exporter = new ChannelExporter(
+      new SlackFetcher(new CursorIterator(), new NullLogger()),
+      new CanonicalMessageFormatter(),
+      new ThreadFolder(),
+      $downloader,
+      new CanonicalJsonWriter($fileSystem, new NullLogger()),
+      new NullLogger(),
+    );
+
+    // Act.
+    $exporter->exportChannel(
+      $client,
+      self::TEST_TOKEN,
+      ['id' => 'C2', 'name' => 'upper', 'type' => 'public_channel'],
+    );
+
+    // Assert: written channel JSON uses lowercase extension.
+    $channelUri = 'public://slack_archive/latest/channels/C2.json';
+    $realPath = $fileSystem->realpath($channelUri);
+    $this->assertNotFalse($realPath);
+    $decoded = json_decode(
+      (string) file_get_contents((string) $realPath),
+      TRUE,
+    );
+    $this->assertIsArray($decoded);
+    /** @var array<int,array<string,mixed>> $msgs */
+    $msgs = $decoded['messages'];
+    $this->assertSame(
+      'files/F2.png',
+      $msgs[0]['files'][0]['local_path'],
+      'Uppercase extension must be lowercased in local_path.',
+    );
+
+    // Assert: file exists at the lowercase path.
+    $fileUri = 'public://slack_archive/latest/files/F2.png';
+    $this->assertNotFalse($fileSystem->realpath($fileUri));
+    $this->assertFileExists(
+      (string) $fileSystem->realpath($fileUri),
+      'File must be written with lowercase extension.',
+    );
+  }
+
 }
