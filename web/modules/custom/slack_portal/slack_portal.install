@@ -8,3 +8,17 @@
  */
 
 declare(strict_types=1);
+
+/**
+ * Implements hook_install().
+ *
+ * Locks JSON:API to read-only so the headless portal never exposes write
+ * operations (ADR-0005/0008). jsonapi.settings is owned by core, so it cannot
+ * be shipped in config/install; we set it here instead.
+ */
+function slack_portal_install(): void {
+  \Drupal::configFactory()
+    ->getEditable('jsonapi.settings')
+    ->set('read_only', TRUE)
+    ->save();
+}
