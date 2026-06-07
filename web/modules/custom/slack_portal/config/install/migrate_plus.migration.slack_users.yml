@@ -1,0 +1,53 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - slack_portal
+id: slack_users
+label: 'Slack users'
+migration_group: slack_portal
+migration_tags:
+  - 'Slack Portal'
+source:
+  plugin: url
+  data_fetcher_plugin: file
+  data_parser_plugin: json
+  urls:
+    - 'public://slack_archive/latest/users.json'
+  item_selector: ''
+  ids:
+    id:
+      type: string
+  fields:
+    - name: id
+      label: 'User ID'
+      selector: id
+    - name: name
+      label: 'Username'
+      selector: name
+    - name: real_name
+      label: 'Real name'
+      selector: real_name
+    - name: display_name
+      label: 'Display name'
+      selector: display_name
+    - name: is_bot
+      label: 'Is bot'
+      selector: is_bot
+    - name: avatar
+      label: 'Avatar'
+      selector: avatar
+process:
+  name: name
+  field_slack_user_id: id
+  field_real_name: real_name
+  field_display_name: display_name
+  field_is_bot: is_bot
+  field_avatar: avatar
+destination:
+  plugin: 'entity:taxonomy_term'
+  default_bundle: slack_users
+migration_dependencies:
+  required: []
+  optional: []
