@@ -1,0 +1,46 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - facets.facet_source.jsonapi_search_api_facets__slack_messages
+    - search_api.index.slack_messages
+  module:
+    - facets
+  enforced:
+    module:
+      - slack_portal
+id: slack_user
+name: 'Slack User'
+weight: 0
+min_count: 1
+missing: false
+missing_label: ''
+url_alias: slack_user
+facet_source_id: 'jsonapi_search_api_facets:slack_messages'
+field_identifier: slack_user_name
+query_operator: or
+hard_limit: 50
+exclude: false
+use_hierarchy: false
+keep_hierarchy_parents_active: false
+hierarchy:
+  type: taxonomy
+  config: {  }
+expand_hierarchy: false
+enable_parent_when_child_gets_disabled: false
+widget:
+  type: jsonapi_search_api
+  config:
+    show_numbers: true
+empty_behavior:
+  behavior: none
+only_visible_when_facet_source_is_visible: true
+show_only_one_result: false
+show_title: false
+processor_configs:
+  url_processor_handler:
+    processor_id: url_processor_handler
+    weights:
+      pre_query: -10
+      build: -10
+    settings: {  }

@@ -1,0 +1,14 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - slack_portal
+id: jsonapi_search_api_facets__slack_messages
+name: 'jsonapi_search_api_facets:slack_messages'
+filter_key: filter
+url_processor: json_api
+breadcrumb:
+  active: false
+  before: false
+  group: false

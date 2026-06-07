@@ -131,7 +131,7 @@ class JsonApiSearchFacetsTest extends BrowserTestBase {
    *   Published (1) or unpublished (0).
    * @param string $channel
    *   Channel name key in $this->channelIds.
-   * @param int $user_tid
+   * @param int|string $user_tid
    *   Term ID for field_slack_user.
    */
   private function createSlackNode(
@@ -146,6 +146,7 @@ class JsonApiSearchFacetsTest extends BrowserTestBase {
       'status' => $status,
       'field_channel' => ['target_id' => $this->channelIds[$channel]],
       'field_slack_user' => ['target_id' => $user_tid],
+      'field_posted_at' => '2024-01-01T00:00:00',
     ]);
     $node->save();
   }
