@@ -41,7 +41,6 @@ final class SlackMessageTitle extends ProcessPluginBase {
    * {@inheritdoc}
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
-    $text = '';
     $ts = '';
     if (is_array($value)) {
       $text = (string) ($value[0] ?? '');

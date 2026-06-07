@@ -40,11 +40,15 @@ class SlackMessageTitleTest extends MigrateProcessTestCase {
   }
 
   /**
-   * Tests that text longer than 255 multibyte chars is truncated to 255.
+   * Tests multibyte truncation keeps first 255 chars and discards the rest.
+   *
+   * Input: 254×'あ' + 'い' + 50×'う' (total 305 chars).
+   * Expected result: first 255 chars, i.e. 254×'あ' followed by 'い'.
    */
   public function testTruncatesMultibyteTextTo255Chars(): void {
     $plugin = new SlackMessageTitle([], 'slack_message_title', []);
-    $longText = str_repeat('あ', 300);
+    // Build a distinguishable string so we can verify truncation point.
+    $longText = str_repeat('あ', 254) . 'い' . str_repeat('う', 50);
 
     $result = $plugin->transform(
       [$longText, '1700000001.000001'],
@@ -53,7 +57,13 @@ class SlackMessageTitleTest extends MigrateProcessTestCase {
       'title',
     );
 
-    $this->assertSame(255, mb_strlen((string) $result));
+    $resultStr = (string) $result;
+    // Length must be exactly 255 multibyte characters.
+    $this->assertSame(255, mb_strlen($resultStr));
+    // The 255th character (index 254) is 'い', confirming the truncation point.
+    $this->assertSame('い', mb_substr($resultStr, 254, 1));
+    // The first 254 characters are all 'あ'.
+    $this->assertSame(str_repeat('あ', 254), mb_substr($resultStr, 0, 254));
   }
 
   /**
