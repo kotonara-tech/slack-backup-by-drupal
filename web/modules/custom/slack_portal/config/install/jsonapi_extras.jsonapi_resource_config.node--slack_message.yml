@@ -1,0 +1,13 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.slack_message
+  enforced:
+    module:
+      - slack_portal
+id: node--slack_message
+disabled: false
+path: node/slack_message
+resourceType: node--slack_message
+resourceFields: {  }

@@ -1,0 +1,13 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - taxonomy.vocabulary.slack_users
+  enforced:
+    module:
+      - slack_portal
+id: taxonomy_term--slack_users
+disabled: false
+path: taxonomy_term/slack_users
+resourceType: taxonomy_term--slack_users
+resourceFields: {  }
