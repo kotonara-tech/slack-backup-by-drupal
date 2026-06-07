@@ -1,0 +1,41 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - slack_portal
+id: slack_channels
+label: 'Slack channels'
+migration_group: slack_portal
+migration_tags:
+  - 'Slack Portal'
+source:
+  plugin: url
+  data_fetcher_plugin: file
+  data_parser_plugin: json
+  urls:
+    - 'public://slack_archive/latest/manifest.json'
+  item_selector: channels
+  ids:
+    id:
+      type: string
+  fields:
+    - name: id
+      label: 'Channel ID'
+      selector: id
+    - name: name
+      label: 'Channel name'
+      selector: name
+    - name: type
+      label: 'Channel type'
+      selector: type
+process:
+  name: name
+  field_slack_channel_id: id
+  field_channel_type: type
+destination:
+  plugin: 'entity:taxonomy_term'
+  default_bundle: slack_channels
+migration_dependencies:
+  required: []
+  optional: []

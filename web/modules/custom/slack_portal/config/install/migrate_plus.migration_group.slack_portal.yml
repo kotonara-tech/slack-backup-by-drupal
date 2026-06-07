@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - slack_portal
+id: slack_portal
+label: 'Slack Portal'
+description: 'Slack canonical JSON を Drupal エンティティへ取り込む migration 群。'
+source_type: 'Canonical Slack JSON archive'

@@ -49,6 +49,8 @@ class SlackChannelsMigrateTest extends MigrateTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
+    $this->installEntitySchema('taxonomy_term');
+    $this->installEntitySchema('user');
     $this->installConfig(['slack_portal']);
     $this->copyCanonicalFixtures();
   }
