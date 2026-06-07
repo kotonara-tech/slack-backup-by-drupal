@@ -160,7 +160,7 @@ token・ciphertext は**例外文・ログ・HTTP 応答・queue item・archive 
 
   Slack token 形（`xoxp-` / `xoxb-` など `xox?-` プレフィクスに続く非空白・非引用符の連なり）を `[REDACTED]` に置換する。置換後のメッセージのみをログ（`logger.channel.slack_portal`）と JSON 応答（`{"status":"error","message":"<sanitised>"}`、HTTP 500）に出す。
 
-- canonical archive（`public://slack_archive/`）には会話・ファイルのみを書き、token は書かない。
+- canonical archive（`private://slack_archive/`）には会話・ファイルのみを書き、token は書かない。
 
 ---
 

@@ -16,17 +16,20 @@ related:
 - 「どのように生成されるか（how）」は [docs/spec/ingest-pipeline.md](./ingest-pipeline.md) を参照。
 - 保存形式の決定経緯は [ADR-0004](../adr/0004-storage-canonical-json-and-mariadb.md)。
 - Drupal エンティティへの取込（migrate）の決定は [ADR-0006](../adr/0006-slack-to-drupal-data-model-and-migrate.md)。
+- アーカイブの private:// 移行は [ADR-0014](../adr/0014-canonical-archive-private-stream.md)。
 
-> 注意（PII / secrets）: canonical アーカイブは PII（実名・email・DM 本文・ユーザ ID）を含むため、`public://slack_archive/` は gitignore 済みで **commit 禁止**。`url_private` は後述のとおりダウンロード後に `REDACTED` へ置換され、Slack token は一切アーカイブに残らない。
+> 注意（PII / secrets）: canonical アーカイブは PII（実名・email・DM 本文・ユーザ ID）を含むため、`private://slack_archive/` は gitignore 済みで **commit 禁止**。`url_private` は後述のとおりダウンロード後に `REDACTED` へ置換され、Slack token は一切アーカイブに残らない。
 
 ---
 
 ## 1. アーカイブのディレクトリ構成
 
-すべてのファイルは安定・決定的なツリー `public://slack_archive/latest/` 配下に書かれる（基準ディレクトリは `CanonicalJsonWriter::baseDir()` が返す固定値 `public://slack_archive/latest`）。`public://` は Drupal のパブリックファイルシステム（通常 `web/sites/<site>/files/`）に解決される。
+すべてのファイルは安定・決定的なツリー `private://slack_archive/latest/` 配下に書かれる（基準ディレクトリは `CanonicalArchive::BASE_DIR` が返す固定値）。`private://` は Drupal のプライベートファイルシステム（web root 外のディレクトリ）に解決され、Web 非配信（[ADR-0014](../adr/0014-canonical-archive-private-stream.md)）。
+
+> M3 で `public://slack_archive/` から `private://slack_archive/` へ移行。Web 直配信を排除し PII の露出を防ぐ（ADR-0014）。設定手順は [docs/how-to/private-files-setup.md](../how-to/private-files-setup.md) を参照。
 
 ```
-public://slack_archive/latest/
+private://slack_archive/latest/
 ├── manifest.json              # エクスポート全体のメタ情報・インデックス
 ├── users.json                 # ユーザ一覧（トップレベル JSON 配列）
 ├── channels/

@@ -13,7 +13,7 @@ related:
 
 # Migrate 取込仕様（確定仕様）
 
-canonical 正規化 JSON（`public://slack_archive/latest/`、[canonical-json.md](./canonical-json.md)）を Drupal エンティティ（[data-model.md](./data-model.md)）へ **migrate_plus で冪等取込**する手順の確定仕様。決定経緯は [ADR-0006](../adr/0006-slack-to-drupal-data-model-and-migrate.md) / [ADR-0013](../adr/0013-anonymous-readability-and-channel-privacy.md)。
+canonical 正規化 JSON（`private://slack_archive/latest/`、[canonical-json.md](./canonical-json.md)）を Drupal エンティティ（[data-model.md](./data-model.md)）へ **migrate_plus で冪等取込**する手順の確定仕様。決定経緯は [ADR-0006](../adr/0006-slack-to-drupal-data-model-and-migrate.md) / [ADR-0013](../adr/0013-anonymous-readability-and-channel-privacy.md)。アーカイブ保存先の private:// 移行は [ADR-0014](../adr/0014-canonical-archive-private-stream.md)。
 
 ## 1. migration 群（migration_group `slack_portal`）
 
@@ -31,10 +31,10 @@ migration は **migrate_plus の config entity**（`config/install/`、`migratio
 ## 2. source plugin
 
 ### 2.1 JSON source（channels / users）
-`plugin: url`, `data_fetcher_plugin: file`, `data_parser_plugin: json`, `urls: ['public://slack_archive/latest/<file>']`（stream URI 可）。`item_selector` は **users.json はルート配列なので `''`（クオート必須）**、channels は manifest の `channels`。`fields[]`（name/label/selector）で抽出キーを宣言、`ids` に migrate id（id）。
+`plugin: url`, `data_fetcher_plugin: file`, `data_parser_plugin: json`, `urls: ['private://slack_archive/latest/<file>']`（stream URI 可）。`item_selector` は **users.json はルート配列なので `''`（クオート必須）**、channels は manifest の `channels`。`fields[]`（name/label/selector）で抽出キーを宣言、`ids` に migrate id（id）。
 
 ### 2.2 `slack_canonical_messages`（custom）
-`SourcePluginBase` ＋ `#[MigrateSource('slack_canonical_messages')]`。`base_dir`（既定 `CanonicalArchive::BASE_DIR` = `public://slack_archive/latest`）配下の `channels/*.json` を **stream wrapper で走査**（`FileSystemInterface::scanDirectory`、realpath/native glob は使わない）。各チャンネルファイルを `CanonicalMessageFlattener::flattenChannel()` で **1 メッセージ＝1 行**に平坦化する:
+`SourcePluginBase` ＋ `#[MigrateSource('slack_canonical_messages')]`。`base_dir`（既定 `CanonicalArchive::BASE_DIR` = `private://slack_archive/latest`）配下の `channels/*.json` を **stream wrapper で走査**（`FileSystemInterface::scanDirectory`、realpath/native glob は使わない）。各チャンネルファイルを `CanonicalMessageFlattener::flattenChannel()` で **1 メッセージ＝1 行**に平坦化する:
 
 - 親メッセージ・ネストされた `replies[]`・orphan reply をすべて行化。
 - **チャンネル内 `slack_ts` で dedup**（Slack の `thread_broadcast` は top-level と親の `replies[]` に二重に出現するため。実 export で約 25 件/全 916）。
@@ -96,7 +96,7 @@ config 変更を既存サイトへ反映するときは `drush cim`（or 該当 
 - 生成: slack_channels term 119 / slack_users term 140 / file 65 / **slack_message node 916**（published 141・unpublished 775）。49 node に添付。
 - 2 回目 import で件数不変（冪等）。
 
-> PII/secrets: 実 export は実名・DM 本文・user id 等の PII を含む。**DB ダンプを共有しない・PR/ログに PII を貼らない**（[ADR-0009](../adr/0009-secrets-and-pii-handling.md)）。`public://slack_archive/` と DB は gitignore/非コミット。
+> PII/secrets: 実 export は実名・DM 本文・user id 等の PII を含む。**DB ダンプを共有しない・PR/ログに PII を貼らない**（[ADR-0009](../adr/0009-secrets-and-pii-handling.md)）。`private://slack_archive/`（M3 で public:// から移行）と DB は gitignore/非コミット。
 
 ## 6. 関連
 - データモデル: [data-model.md](./data-model.md) ／ 入力スキーマ: [canonical-json.md](./canonical-json.md) ／ 生成: [ingest-pipeline.md](./ingest-pipeline.md)
