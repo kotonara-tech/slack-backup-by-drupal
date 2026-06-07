@@ -12,10 +12,6 @@ namespace Drupal\Tests\slack_portal\Functional;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
-use Drupal\Tests\BrowserTestBase;
-use Drupal\Tests\jsonapi\Functional\JsonApiRequestTestTrait;
-use Drupal\Core\Session\AccountInterface;
-use Drupal\user\Entity\Role;
 use GuzzleHttp\RequestOptions;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -32,36 +28,7 @@ use PHPUnit\Framework\Attributes\Group;
  * @group slack_portal
  */
 #[Group('slack_portal')]
-class JsonApiReadOnlyTest extends BrowserTestBase {
-
-  use JsonApiRequestTestTrait;
-
-  /**
-   * {@inheritdoc}
-   *
-   * BrowserTestBase resolves info.yml deps but slack_portal.info.yml omits
-   * several implicit core field/type deps that its config/install requires
-   * (text, datetime, taxonomy, file). We list them here so the full Drupal
-   * site install succeeds. 'slack_portal' pulls in jsonapi, migrate_plus, key,
-   * encrypt, real_aes, etc. via info.yml resolution.
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'node',
-    'text',
-    'field',
-    'datetime',
-    'taxonomy',
-    'file',
-    'filter',
-    'slack_portal',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected $defaultTheme = 'stark';
+class JsonApiReadOnlyTest extends SlackJsonApiFunctionalTestBase {
 
   /**
    * UUID of the published slack_message node.
@@ -74,11 +41,7 @@ class JsonApiReadOnlyTest extends BrowserTestBase {
   protected function setUp(): void {
     parent::setUp();
 
-    // Ensure anonymous has core "access content" (standard permission).
-    /** @var \Drupal\user\Entity\Role $anon_role */
-    $anon_role = Role::load(AccountInterface::ANONYMOUS_ROLE);
-    $anon_role->grantPermission('access content');
-    $anon_role->save();
+    $this->grantAnonAccessContent();
 
     // Create one PUBLISHED slack_message.
     $published = Node::create([

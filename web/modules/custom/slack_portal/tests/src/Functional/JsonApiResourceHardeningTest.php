@@ -10,15 +10,9 @@ declare(strict_types=1);
 namespace Drupal\Tests\slack_portal\Functional;
 
 use Drupal\Component\Serialization\Json;
-use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
-use Drupal\search_api\Entity\Index;
-use Drupal\search_api\IndexInterface;
 use Drupal\taxonomy\Entity\Term;
-use Drupal\Tests\BrowserTestBase;
-use Drupal\Tests\jsonapi\Functional\JsonApiRequestTestTrait;
-use Drupal\user\Entity\Role;
 use GuzzleHttp\RequestOptions;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -38,34 +32,7 @@ use PHPUnit\Framework\Attributes\Group;
  * @group slack_portal
  */
 #[Group('slack_portal')]
-class JsonApiResourceHardeningTest extends BrowserTestBase {
-
-  use JsonApiRequestTestTrait;
-
-  /**
-   * {@inheritdoc}
-   *
-   * BrowserTestBase resolves info.yml deps. The core field-type modules are
-   * listed here because they are implicit deps of the config installed by
-   * slack_portal.
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'node',
-    'text',
-    'field',
-    'datetime',
-    'taxonomy',
-    'file',
-    'filter',
-    'slack_portal',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected $defaultTheme = 'stark';
+class JsonApiResourceHardeningTest extends SlackJsonApiFunctionalTestBase {
 
   /**
    * UUID of the published slack_message node.
@@ -79,10 +46,7 @@ class JsonApiResourceHardeningTest extends BrowserTestBase {
     parent::setUp();
 
     // Grant anonymous "access content" so node resources are visible.
-    /** @var \Drupal\user\Entity\Role $anon */
-    $anon = Role::load(AccountInterface::ANONYMOUS_ROLE);
-    $anon->grantPermission('access content');
-    $anon->save();
+    $this->grantAnonAccessContent();
 
     // Create a channel term for includes and indexing.
     $channel = Term::create([
@@ -110,14 +74,7 @@ class JsonApiResourceHardeningTest extends BrowserTestBase {
     $this->publishedUuid = $node->uuid();
 
     // Index items so the search endpoint has data.
-    $index = Index::load('slack_messages');
-    assert($index instanceof IndexInterface);
-    $this->container
-      ->get('search_api.index_task_manager')
-      ->addItemsAll($index);
-    $index->indexItems();
-
-    $this->container->get('router.builder')->rebuildIfNeeded();
+    $this->buildSearchIndex();
   }
 
   /**

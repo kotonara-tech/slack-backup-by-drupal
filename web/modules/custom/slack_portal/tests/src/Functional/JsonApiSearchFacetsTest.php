@@ -10,15 +10,9 @@ declare(strict_types=1);
 namespace Drupal\Tests\slack_portal\Functional;
 
 use Drupal\Component\Serialization\Json;
-use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
-use Drupal\search_api\Entity\Index;
-use Drupal\search_api\IndexInterface;
 use Drupal\taxonomy\Entity\Term;
-use Drupal\Tests\BrowserTestBase;
-use Drupal\Tests\jsonapi\Functional\JsonApiRequestTestTrait;
-use Drupal\user\Entity\Role;
 use GuzzleHttp\RequestOptions;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -35,30 +29,7 @@ use PHPUnit\Framework\Attributes\Group;
  * @group slack_portal
  */
 #[Group('slack_portal')]
-class JsonApiSearchFacetsTest extends BrowserTestBase {
-
-  use JsonApiRequestTestTrait;
-
-  /**
-   * {@inheritdoc}
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'node',
-    'text',
-    'field',
-    'datetime',
-    'taxonomy',
-    'file',
-    'filter',
-    'slack_portal',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected $defaultTheme = 'stark';
+class JsonApiSearchFacetsTest extends SlackJsonApiFunctionalTestBase {
 
   /**
    * Term IDs keyed by channel name.
@@ -73,11 +44,7 @@ class JsonApiSearchFacetsTest extends BrowserTestBase {
   protected function setUp(): void {
     parent::setUp();
 
-    // Grant anonymous user the "access content" permission.
-    /** @var \Drupal\user\Entity\Role $anon */
-    $anon = Role::load(AccountInterface::ANONYMOUS_ROLE);
-    $anon->grantPermission('access content');
-    $anon->save();
+    $this->grantAnonAccessContent();
 
     // Create two channel taxonomy terms.
     $general = Term::create([
@@ -111,15 +78,7 @@ class JsonApiSearchFacetsTest extends BrowserTestBase {
     // Create an unpublished node (must be invisible).
     $this->createSlackNode('Hidden message', 0, 'general', $user->id());
 
-    // Build and run the search index.
-    $index = Index::load('slack_messages');
-    assert($index instanceof IndexInterface);
-    $this->container
-      ->get('search_api.index_task_manager')
-      ->addItemsAll($index);
-    $index->indexItems();
-
-    $this->container->get('router.builder')->rebuildIfNeeded();
+    $this->buildSearchIndex();
   }
 
   /**

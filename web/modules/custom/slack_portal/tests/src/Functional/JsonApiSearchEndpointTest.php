@@ -10,15 +10,9 @@ declare(strict_types=1);
 namespace Drupal\Tests\slack_portal\Functional;
 
 use Drupal\Component\Serialization\Json;
-use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
-use Drupal\search_api\Entity\Index;
-use Drupal\search_api\IndexInterface;
 use Drupal\taxonomy\Entity\Term;
-use Drupal\Tests\BrowserTestBase;
-use Drupal\Tests\jsonapi\Functional\JsonApiRequestTestTrait;
-use Drupal\user\Entity\Role;
 use GuzzleHttp\RequestOptions;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -33,35 +27,7 @@ use PHPUnit\Framework\Attributes\Group;
  * @group slack_portal
  */
 #[Group('slack_portal')]
-class JsonApiSearchEndpointTest extends BrowserTestBase {
-
-  use JsonApiRequestTestTrait;
-
-  /**
-   * {@inheritdoc}
-   *
-   * BrowserTestBase resolves info.yml deps for slack_portal (search_api,
-   * jsonapi_search_api, facets, etc.). We still list the core field-type
-   * modules that are implicit dependencies of the config installed by
-   * slack_portal.
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'node',
-    'text',
-    'field',
-    'datetime',
-    'taxonomy',
-    'file',
-    'filter',
-    'slack_portal',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected $defaultTheme = 'stark';
+class JsonApiSearchEndpointTest extends SlackJsonApiFunctionalTestBase {
 
   /**
    * {@inheritdoc}
@@ -69,11 +35,7 @@ class JsonApiSearchEndpointTest extends BrowserTestBase {
   protected function setUp(): void {
     parent::setUp();
 
-    // Grant anonymous user the "access content" permission.
-    /** @var \Drupal\user\Entity\Role $anon */
-    $anon = Role::load(AccountInterface::ANONYMOUS_ROLE);
-    $anon->grantPermission('access content');
-    $anon->save();
+    $this->grantAnonAccessContent();
 
     // Create a "general" channel taxonomy term for field_channel.
     $channel = Term::create([
@@ -112,15 +74,7 @@ class JsonApiSearchEndpointTest extends BrowserTestBase {
     ]);
     $unpublished->save();
 
-    // Index all items so results are available immediately.
-    $index = Index::load('slack_messages');
-    assert($index instanceof IndexInterface);
-    $this->container
-      ->get('search_api.index_task_manager')
-      ->addItemsAll($index);
-    $index->indexItems();
-
-    $this->container->get('router.builder')->rebuildIfNeeded();
+    $this->buildSearchIndex();
   }
 
   /**
