@@ -111,6 +111,24 @@ class SlackMessagesScalarMigrateTest extends MigrateTestBase {
     $bot = $this->loadBySlackTs('1700000040.000040');
     $this->assertTrue($bot->isPublished());
     $this->assertSame('automated post from a bot', $bot->label());
+    // Bot message subtype field.
+    $this->assertSame('bot_message', $bot->get('field_subtype')->value);
+
+    // IM node -> unpublished (DM privacy).
+    $this->assertFalse($this->loadBySlackTs('1700002000.000001')->isPublished());
+
+    // MPIM node -> unpublished (group DM privacy).
+    $this->assertFalse($this->loadBySlackTs('1700003000.000001')->isPublished());
+
+    // Standalone message: no thread context, zero reply count.
+    $standalone = $this->loadBySlackTs('1700000001.000001');
+    $this->assertTrue($standalone->get('field_thread_ts')->isEmpty());
+    $this->assertSame(0, (int) $standalone->get('field_reply_count')->value);
+
+    // Thread parent: reply_count=2, thread_ts equals its own ts.
+    $parent = $this->loadBySlackTs('1700000010.000010');
+    $this->assertSame(2, (int) $parent->get('field_reply_count')->value);
+    $this->assertSame('1700000010.000010', $parent->get('field_thread_ts')->value);
   }
 
 }

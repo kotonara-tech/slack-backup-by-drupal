@@ -77,6 +77,11 @@ class SlackUsersMigrateTest extends MigrateTestBase {
     $this->assertFalse((bool) $alice->get('field_is_bot')->value);
     // Email must NOT be imported (no such field on slack_users).
     $this->assertFalse($alice->hasField('field_email'));
+    // Avatar URL must be imported.
+    $this->assertSame(
+      'https://avatars.example.test/alice_192.png',
+      $alice->get('field_avatar')->value,
+    );
 
     $botResults = $storage->loadByProperties([
       'vid' => 'slack_users',
