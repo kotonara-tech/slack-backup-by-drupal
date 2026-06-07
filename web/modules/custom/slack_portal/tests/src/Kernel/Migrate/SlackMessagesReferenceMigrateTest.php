@@ -53,7 +53,9 @@ class SlackMessagesReferenceMigrateTest extends MigrateTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('node');
     $this->installEntitySchema('taxonomy_term');
+    $this->installEntitySchema('file');
     $this->installSchema('node', ['node_access']);
+    $this->installSchema('file', ['file_usage']);
     $this->installConfig(['filter']);
     $this->installConfig(['slack_portal']);
     $this->copyCanonicalFixtures();
@@ -76,7 +78,7 @@ class SlackMessagesReferenceMigrateTest extends MigrateTestBase {
    * References resolve; the null-user bot message gets no user and no stub.
    */
   public function testReferencesResolveAndNullUserSkipped(): void {
-    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_messages']);
+    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_files', 'slack_messages']);
 
     // A public message references its channel term and its user term.
     $m1 = $this->loadBySlackTs('1700000001.000001');

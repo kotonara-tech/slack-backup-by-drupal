@@ -53,7 +53,9 @@ class SlackMigrationIdempotencyTest extends MigrateTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('node');
     $this->installEntitySchema('taxonomy_term');
+    $this->installEntitySchema('file');
     $this->installSchema('node', ['node_access']);
+    $this->installSchema('file', ['file_usage']);
     $this->installConfig(['filter']);
     $this->installConfig(['slack_portal']);
     $this->copyCanonicalFixtures();
@@ -115,7 +117,7 @@ class SlackMigrationIdempotencyTest extends MigrateTestBase {
    * Re-running the whole migration set changes no counts or ids.
    */
   public function testImportIsIdempotent(): void {
-    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_messages']);
+    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_files', 'slack_messages']);
 
     $firstNodes = $this->loadFreshNodes(['type' => 'slack_message']);
     $this->assertCount(10, $firstNodes);
@@ -132,7 +134,7 @@ class SlackMigrationIdempotencyTest extends MigrateTestBase {
     $this->assertTrue($this->loadBySlackTs('1700000001.000001')->isPublished());
 
     // Second run.
-    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_messages']);
+    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_files', 'slack_messages']);
 
     $secondNodes = $this->loadFreshNodes(['type' => 'slack_message']);
     $this->assertCount(10, $secondNodes, 'Re-import must not create duplicate nodes.');
@@ -149,7 +151,7 @@ class SlackMigrationIdempotencyTest extends MigrateTestBase {
    * Editing a message's text + edited flag re-imports it in place.
    */
   public function testEditedMessageReimportsInPlace(): void {
-    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_messages']);
+    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_files', 'slack_messages']);
 
     $m1 = $this->loadBySlackTs('1700000001.000001');
     $this->assertSame('Hello public channel', $m1->get('field_body')->value);
@@ -168,7 +170,7 @@ class SlackMigrationIdempotencyTest extends MigrateTestBase {
     file_put_contents($uri, json_encode($data));
 
     // Re-run (track_changes detects the changed row hash).
-    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_messages']);
+    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_files', 'slack_messages']);
 
     $this->assertCount(10, $this->loadFreshNodes(['type' => 'slack_message']));
     $updated = $this->loadBySlackTs('1700000001.000001');
