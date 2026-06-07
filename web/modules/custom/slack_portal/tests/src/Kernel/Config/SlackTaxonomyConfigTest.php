@@ -43,6 +43,12 @@ class SlackTaxonomyConfigTest extends KernelTestBase {
     'migrate_plus',
     'search_api',
     'search_api_db',
+    'serialization',
+    'jsonapi',
+    'jsonapi_resources',
+    'jsonapi_search_api',
+    'jsonapi_search_api_facets',
+    'facets',
     'slack_portal',
   ];
 

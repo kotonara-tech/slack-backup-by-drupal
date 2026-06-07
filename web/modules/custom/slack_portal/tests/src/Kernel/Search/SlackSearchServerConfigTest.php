@@ -41,6 +41,12 @@ class SlackSearchServerConfigTest extends KernelTestBase {
     'real_aes',
     'search_api',
     'search_api_db',
+    'serialization',
+    'jsonapi',
+    'jsonapi_resources',
+    'jsonapi_search_api',
+    'jsonapi_search_api_facets',
+    'facets',
     'slack_portal',
   ];
 
