@@ -87,6 +87,44 @@ class TaxonomyTermAccessTest extends SlackMigrateKernelTestBase {
       'Anonymous must NOT be able to view a private_channel term.',
     );
 
+    // -- im term: anonymous MUST be denied -----------------------
+    $imTerms = $termStorage->loadByProperties([
+      'vid' => 'slack_channels',
+      'field_slack_channel_id' => 'D_IM001',
+    ]);
+    $imTerm = reset($imTerms);
+    $this->assertNotFalse(
+      $imTerm,
+      'Pre-condition: im channel term must exist.',
+    );
+    $this->assertSame(
+      'im',
+      $imTerm->get('field_channel_type')->value,
+    );
+    $this->assertFalse(
+      $imTerm->access('view'),
+      'Anonymous must NOT be able to view an im channel term.',
+    );
+
+    // -- mpim term: anonymous MUST be denied ----------------------
+    $mpimTerms = $termStorage->loadByProperties([
+      'vid' => 'slack_channels',
+      'field_slack_channel_id' => 'G_MPIM001',
+    ]);
+    $mpimTerm = reset($mpimTerms);
+    $this->assertNotFalse(
+      $mpimTerm,
+      'Pre-condition: mpim channel term must exist.',
+    );
+    $this->assertSame(
+      'mpim',
+      $mpimTerm->get('field_channel_type')->value,
+    );
+    $this->assertFalse(
+      $mpimTerm->access('view'),
+      'Anonymous must NOT be able to view an mpim channel term.',
+    );
+
     // -- slack_users term: anonymous MUST be able to view ----------
     $userTerms = $termStorage->loadByProperties([
       'vid' => 'slack_users',
