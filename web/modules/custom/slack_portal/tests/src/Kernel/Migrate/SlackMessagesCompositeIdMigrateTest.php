@@ -99,6 +99,17 @@ class SlackMessagesCompositeIdMigrateTest extends MigrateTestBase {
       'field_slack_ts' => '1700000001.000001',
     ]);
     $this->assertCount(2, $nodes);
+
+    // Confirm the two nodes carry genuinely distinct body content.
+    $texts = array_map(
+      static fn ($n) => $n->get('field_body')->value,
+      array_values($nodes),
+    );
+    sort($texts);
+    $this->assertSame(
+      ['Hello public channel', 'same ts different channel'],
+      $texts,
+    );
   }
 
 }

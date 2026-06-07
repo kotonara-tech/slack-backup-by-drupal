@@ -120,6 +120,7 @@ final class SlackCanonicalMessages extends SourcePluginBase implements Container
    */
   public function getIds() {
     return [
+      'channel_id' => ['type' => 'string'],
       'slack_ts' => ['type' => 'string'],
     ];
   }
