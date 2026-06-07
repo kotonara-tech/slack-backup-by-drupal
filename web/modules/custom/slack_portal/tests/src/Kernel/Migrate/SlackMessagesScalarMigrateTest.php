@@ -76,7 +76,7 @@ class SlackMessagesScalarMigrateTest extends MigrateTestBase {
    * Scalars, status (privacy), title and posted_at migrate correctly.
    */
   public function testScalarsAndStatusMigrate(): void {
-    $this->executeMigration('slack_messages');
+    $this->executeMigrations(['slack_channels', 'slack_users', 'slack_messages']);
 
     $nodes = \Drupal::entityTypeManager()->getStorage('node')->loadByProperties([
       'type' => 'slack_message',

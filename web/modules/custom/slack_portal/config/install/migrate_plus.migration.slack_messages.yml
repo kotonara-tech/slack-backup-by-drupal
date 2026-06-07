@@ -41,9 +41,23 @@ process:
     map:
       public_channel: 1
     default_value: 0
+  field_channel:
+    plugin: migration_lookup
+    migration: slack_channels
+    source: channel_id
+    no_stub: true
+  field_slack_user:
+    - plugin: skip_on_empty
+      method: process
+      source: user_id
+    - plugin: migration_lookup
+      migration: slack_users
+      no_stub: true
 destination:
   plugin: 'entity:node'
   default_bundle: slack_message
 migration_dependencies:
-  required: []
+  required:
+    - slack_channels
+    - slack_users
   optional: []
