@@ -39,6 +39,8 @@ class SlackTaxonomyConfigTest extends KernelTestBase {
     'key',
     'encrypt',
     'real_aes',
+    'migrate',
+    'migrate_plus',
     'slack_portal',
   ];
 
