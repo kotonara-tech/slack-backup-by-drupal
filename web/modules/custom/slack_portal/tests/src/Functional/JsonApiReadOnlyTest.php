@@ -148,9 +148,8 @@ class JsonApiReadOnlyTest extends BrowserTestBase {
       RequestOptions::BODY => $body,
     ]);
 
-    $status = $response->getStatusCode();
-    $this->assertContains($status, [403, 405],
-      "Anonymous POST must be rejected with 405 or 403, got $status.");
+    $this->assertSame(405, $response->getStatusCode(),
+      'Anonymous POST must be rejected with 405 (read-only).');
   }
 
   /**
@@ -179,9 +178,8 @@ class JsonApiReadOnlyTest extends BrowserTestBase {
       RequestOptions::BODY => $body,
     ]);
 
-    $status = $response->getStatusCode();
-    $this->assertContains($status, [403, 405],
-      "Anonymous PATCH must be rejected with 405 or 403, got $status.");
+    $this->assertSame(405, $response->getStatusCode(),
+      'Anonymous PATCH must be rejected with 405 (read-only).');
   }
 
   /**
@@ -189,7 +187,7 @@ class JsonApiReadOnlyTest extends BrowserTestBase {
    *
    * Given JSON:API is locked read-only,
    * When anonymous DELETEs /jsonapi/node/slack_message/{uuid},
-   * Then HTTP 405 or 403 is returned.
+   * Then HTTP 405 is returned.
    */
   public function testAnonymousDeleteIsRejected(): void {
     $url = Url::fromUri(
@@ -201,9 +199,47 @@ class JsonApiReadOnlyTest extends BrowserTestBase {
       ],
     ]);
 
-    $status = $response->getStatusCode();
-    $this->assertContains($status, [403, 405],
-      "Anonymous DELETE must be rejected with 405 or 403, got $status.");
+    $this->assertSame(405, $response->getStatusCode(),
+      'Anonymous DELETE must be rejected with 405 (read-only).');
+  }
+
+  /**
+   * Read_only overrides write permission for an authenticated user (M3).
+   *
+   * Given: a user with create/edit/delete slack_message content permissions
+   * AND jsonapi.settings:read_only = TRUE (set by hook_install),
+   * When: that user POSTs to /jsonapi/node/slack_message,
+   * Then: the response is 405, proving the read-only lock—not missing
+   * permission—is responsible for blocking writes.
+   */
+  public function testReadOnlyOverridesWritePermission(): void {
+    // Arrange: create a user that holds all content-write permissions.
+    $user = $this->drupalCreateUser([
+      'access content',
+      'create slack_message content',
+      'edit any slack_message content',
+      'delete any slack_message content',
+    ]);
+    $this->drupalLogin($user);
+
+    // Act: POST a minimal valid slack_message.
+    $url = Url::fromRoute('jsonapi.node--slack_message.collection');
+    $response = $this->request('POST', $url, [
+      RequestOptions::HEADERS => [
+        'Accept' => 'application/vnd.api+json',
+        'Content-Type' => 'application/vnd.api+json',
+      ],
+      RequestOptions::BODY => Json::encode([
+        'data' => [
+          'type' => 'node--slack_message',
+          'attributes' => ['title' => 'x'],
+        ],
+      ]),
+    ]);
+
+    // Assert: 405 because read_only=TRUE overrides the user's write permission.
+    $this->assertSame(405, $response->getStatusCode(),
+      'POST must be 405 even for a user holding create permission (read_only lock).');
   }
 
 }
