@@ -36,6 +36,21 @@ function slack_portal_install(): void {
 }
 
 /**
+ * Harden JSON:API for existing installs: read-only + resource whitelist (M3).
+ */
+function slack_portal_update_9001(): void {
+  \Drupal::configFactory()
+    ->getEditable('jsonapi.settings')
+    ->set('read_only', TRUE)
+    ->save();
+
+  \Drupal::configFactory()
+    ->getEditable('jsonapi_extras.settings')
+    ->set('default_disabled', TRUE)
+    ->save();
+}
+
+/**
  * Implements hook_uninstall().
  *
  * Restores jsonapi_extras default_disabled to FALSE so the setting does not
