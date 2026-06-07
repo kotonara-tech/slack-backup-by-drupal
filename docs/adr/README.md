@@ -25,3 +25,4 @@
 | [0010](0010-ci-pyramid-and-local-pr-gates.md) | CI（ピラミッド順）と local-ci / PR ゲート | proposed |
 | [0011](0011-drupal-api-test-toolchain.md) | Drupal API テストツールチェーン（PHPUnit/PHPStan/PHPCS） | proposed |
 | [0012](0012-portal-managed-credentials-and-triggered-ingest.md) | ポータル管理 credential ＋ frontend トリガ background ingest | accepted |
+| [0013](0013-anonymous-readability-and-channel-privacy.md) | 匿名閲覧可否とチャンネルプライバシー（公開範囲ゲーティング） | proposed |
