@@ -38,6 +38,15 @@ only_visible_when_facet_source_is_visible: true
 show_only_one_result: false
 show_title: false
 processor_configs:
+  date_item:
+    processor_id: date_item
+    weights:
+      build: 35
+    settings:
+      date_format: ''
+      granularity: 4
+      hierarchy: false
+      date_display: actual_date
   url_processor_handler:
     processor_id: url_processor_handler
     weights:

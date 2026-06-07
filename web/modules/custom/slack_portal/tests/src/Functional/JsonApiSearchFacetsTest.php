@@ -244,6 +244,34 @@ class JsonApiSearchFacetsTest extends BrowserTestBase {
   }
 
   /**
+   * Posted_at facet uses date_item granularity (day-level bucket values).
+   *
+   * Given: all nodes share the same calendar day (2024-01-01),
+   * When:  anonymous GETs /jsonapi/index/slack_messages,
+   * Then:  the posted_at facet has exactly 1 term (all messages bucketed
+   *        together) and its value matches day-granularity (YYYY-MM-DD or
+   *        a unix-timestamp grouping), not per-second precision.
+   */
+  public function testPostedAtFacetUsesDateGranularity(): void {
+    $url = Url::fromRoute('jsonapi_search_api.index_slack_messages');
+    $data = $this->doRequest($url);
+
+    $posted_at_facet = $this->findFacet($data['meta']['facets'], 'posted_at');
+    $this->assertNotNull(
+      $posted_at_facet,
+      'posted_at facet must appear in meta.facets.'
+    );
+
+    // All nodes were created with field_posted_at = 2024-01-01, so with
+    // DAY granularity the date_item processor groups them into a single bucket.
+    $this->assertCount(
+      1,
+      $posted_at_facet['terms'],
+      'date_item (DAY granularity) must group all same-day messages into 1 bucket.'
+    );
+  }
+
+  /**
    * Finds a facet by id from the meta.facets array.
    *
    * @param array $facets
