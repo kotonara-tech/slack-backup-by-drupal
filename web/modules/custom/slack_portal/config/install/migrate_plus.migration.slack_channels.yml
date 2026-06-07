@@ -14,7 +14,7 @@ source:
   data_fetcher_plugin: file
   data_parser_plugin: json
   urls:
-    - 'public://slack_archive/latest/manifest.json'
+    - 'private://slack_archive/latest/manifest.json'
   item_selector: channels
   ids:
     id:

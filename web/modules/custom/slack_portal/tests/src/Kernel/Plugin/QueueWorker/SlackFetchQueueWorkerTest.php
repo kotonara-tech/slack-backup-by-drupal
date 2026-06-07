@@ -53,6 +53,20 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
   private const TEST_TOKEN = 'xoxp-test'; // pragma: allowlist secret
 
   /**
+   * {@inheritdoc}
+   *
+   * Creates the private:// directory and sets file_private_path so that
+   * CoreServiceProvider registers the private stream wrapper when the kernel
+   * boots.
+   */
+  protected function setUpFilesystem(): void {
+    parent::setUpFilesystem();
+    $private_dir = $this->siteDirectory . '/private';
+    mkdir($private_dir, 0775, TRUE);
+    $this->setSetting('file_private_path', $private_dir);
+  }
+
+  /**
    * Builds a SlackFetchQueueWorker with the given mocks and real services.
    *
    * @param \Drupal\slack_portal\Service\SlackClientFactory $clientFactory
@@ -74,11 +88,14 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
     CanonicalJsonWriter $jsonWriter,
   ): SlackFetchQueueWorker {
     // SlackTokenProvider is final — use Settings resolver (no encryption).
+    // Preserve all existing settings (including file_private_path) while
+    // injecting the test token so the private:// stream wrapper stays usable.
+    $merged = Settings::getAll() + [
+      // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
+      'slack_user_token' => self::TEST_TOKEN, // pragma: allowlist secret
+    ];
     $tokenProvider = new SlackTokenProvider(
-      new Settings([
-        // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar
-        'slack_user_token' => self::TEST_TOKEN, // pragma: allowlist secret
-      ]),
+      new Settings($merged),
       $this->container->get('state'),
       $this->container->get('encryption'),
       $this->container->get('encrypt.encryption_profile.manager'),
@@ -112,7 +129,7 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
    *   'type'=>'public_channel']]) is called,
    * Then getStatus() shows processed==1, messages==3, status=='done',
    * channels has the C1 entry, and the manifest JSON exists at
-   * public://slack_archive/latest/manifest.json with counts.channels==1,
+   * private://slack_archive/latest/manifest.json with counts.channels==1,
    * counts.messages==3, counts.users==4.
    */
   public function testProcessItemCompletesWhenSingleChannel(): void {
@@ -168,7 +185,7 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
     $this->assertSame('C1', $status['channels'][0]['id']);
 
     // Assert: manifest.json written.
-    $manifestUri = 'public://slack_archive/latest/manifest.json';
+    $manifestUri = 'private://slack_archive/latest/manifest.json';
     $realPath = $fileSystem->realpath($manifestUri);
     $this->assertNotFalse($realPath, 'manifest.json URI must resolve.');
     $this->assertFileExists((string) $realPath, 'manifest.json must exist on disk.');
@@ -242,7 +259,7 @@ class SlackFetchQueueWorkerTest extends KernelTestBase {
     $this->assertSame('running', $status['status'], 'Status must remain running.');
 
     // Assert: no manifest.json yet.
-    $manifestUri = 'public://slack_archive/latest/manifest.json';
+    $manifestUri = 'private://slack_archive/latest/manifest.json';
     // Manifest must not exist when only the first of two channels was done.
     $manifestRealPath = $fileSystem->realpath($manifestUri);
     if ($manifestRealPath !== FALSE) {

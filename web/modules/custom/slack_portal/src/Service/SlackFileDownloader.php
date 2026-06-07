@@ -57,7 +57,7 @@ final class SlackFileDownloader {
    * @param string $token
    *   A Slack user token (xoxp-…) with files:read scope. Never logged.
    * @param string $destStreamUri
-   *   The destination stream URI, e.g. 'public://slack_archive/files/F1.png'.
+   *   The destination stream URI, e.g. 'private://slack_archive/files/F1.png'.
    * @param int|null $expectedSize
    *   If provided, skip download when the existing file has this exact size.
    *   Pass null to skip only when the file exists regardless of size.

@@ -21,7 +21,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Reads canonical channel JSON files and yields flattened, deduped messages.
  *
- * Scans <base_dir>/channels/*.json via the public:// stream wrapper, decodes
+ * Scans <base_dir>/channels/*.json via the private:// stream wrapper, decodes
  * each channel document, and delegates flattening/dedup to
  * CanonicalMessageFlattener. The migrate id is slack_ts.
  */

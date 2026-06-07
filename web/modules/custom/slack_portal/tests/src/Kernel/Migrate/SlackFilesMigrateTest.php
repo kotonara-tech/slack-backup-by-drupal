@@ -31,7 +31,7 @@ class SlackFilesMigrateTest extends SlackMigrateKernelTestBase {
 
     // One managed file entity created, permanent, referencing the public uri.
     $files = \Drupal::entityTypeManager()->getStorage('file')->loadByProperties([
-      'uri' => 'public://slack_archive/latest/files/F_LOCAL.png',
+      'uri' => 'private://slack_archive/latest/files/F_LOCAL.png',
     ]);
     $this->assertCount(1, $files);
     $file = reset($files);

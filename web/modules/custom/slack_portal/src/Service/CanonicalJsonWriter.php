@@ -17,14 +17,14 @@ use Psr\Log\LoggerInterface;
  * Writes canonical Slack archive JSON files idempotently.
  *
  * All files are written to a stable, deterministic tree under
- * public://slack_archive/latest/ using the channel ID (or well-known names
+ * private://slack_archive/latest/ using the channel ID (or well-known names
  * "users.json" / "manifest.json") as the filename. Re-running with the same
  * input produces byte-identical output because JSON is encoded with
  * JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES, and
  * existing files are replaced rather than renamed.
  *
  * The class intentionally has no dependency on stream_wrapper_manager;
- * FileSystemInterface + public:// URIs are sufficient.
+ * FileSystemInterface + private:// URIs are sufficient.
  */
 final class CanonicalJsonWriter {
 
@@ -46,7 +46,7 @@ final class CanonicalJsonWriter {
    * Returns the base directory URI for the canonical archive.
    *
    * @return string
-   *   Always 'public://slack_archive/latest'.
+   *   Always 'private://slack_archive/latest'.
    */
   public function baseDir(): string {
     return CanonicalArchive::BASE_DIR;
@@ -75,7 +75,7 @@ final class CanonicalJsonWriter {
    *
    * @return string
    *   The stream URI of the written file
-   *   (e.g. 'public://…/channels/C123.json').
+   *   (e.g. 'private://…/channels/C123.json').
    */
   public function writeChannel(string $channelId, array $channelMeta, array $foldedMessages): string {
     $data = [
@@ -96,7 +96,7 @@ final class CanonicalJsonWriter {
    *   The list of normalized user objects.
    *
    * @return string
-   *   The stream URI of the written file ('public://…/users.json').
+   *   The stream URI of the written file ('private://…/users.json').
    */
   public function writeUsers(array $users): string {
     $uri = $this->baseDir() . '/users.json';
@@ -112,7 +112,7 @@ final class CanonicalJsonWriter {
    *   The manifest data (schema_version, generated_at, counts, etc.).
    *
    * @return string
-   *   The stream URI of the written file ('public://…/manifest.json').
+   *   The stream URI of the written file ('private://…/manifest.json').
    */
   public function writeManifest(array $manifest): string {
     $uri = $this->baseDir() . '/manifest.json';
@@ -131,7 +131,7 @@ final class CanonicalJsonWriter {
    *   file_put_contents() on the real path to guarantee overwrite semantics.
    *
    * @param string $uri
-   *   The stream URI to write to (must start with 'public://').
+   *   The stream URI to write to (must start with 'private://').
    * @param mixed $data
    *   The data to JSON-encode.
    *

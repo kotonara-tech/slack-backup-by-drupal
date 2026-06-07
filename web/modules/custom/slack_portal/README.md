@@ -14,5 +14,5 @@ Slack 取得から Drupal 公開までを担う単一カスタムモジュール
 - 実行：`ddev exec vendor/bin/phpunit -c web/phpunit.xml`。静的解析：`phpstan`(level5)＋`phpcs`(Drupal/DrupalPractice)。
 
 ## 注意
-- token は Key/env、ログ禁止。canonical アーカイブ（`public://slack_archive/`）は非コミット（`.claude/rules/secrets-and-pii.md`）。
+- token は Key/env、ログ禁止。canonical アーカイブ（`private://slack_archive/`）は非コミット（`.claude/rules/secrets-and-pii.md`）。
 - 設計判断は ADR（`documentor`）。承認済み ADR は不変。

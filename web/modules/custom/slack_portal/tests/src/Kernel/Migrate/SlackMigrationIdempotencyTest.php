@@ -118,8 +118,8 @@ class SlackMigrationIdempotencyTest extends SlackMigrateKernelTestBase {
     $this->assertFalse((bool) $m1->get('field_edited')->value);
     $originalNid = $m1->id();
 
-    // Mutate the public:// copy of the channel file (NOT the source fixture).
-    $uri = 'public://slack_archive/latest/channels/C_PUB001.json';
+    // Mutate the private:// copy of the channel file (NOT the source fixture).
+    $uri = 'private://slack_archive/latest/channels/C_PUB001.json';
     $data = json_decode(file_get_contents($uri), TRUE);
     foreach ($data['messages'] as $i => $message) {
       if (($message['slack_ts'] ?? '') === '1700000001.000001') {

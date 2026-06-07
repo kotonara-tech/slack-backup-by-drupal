@@ -24,7 +24,7 @@ use Psr\Log\NullLogger;
 /**
  * Kernel tests for SlackFileDownloader.
  *
- * Uses the public:// stream wrapper which requires Kernel environment (DB).
+ * Uses the private:// stream wrapper which requires Kernel environment (DB).
  * The slack_portal module is NOT enabled here to avoid heavy M2 contrib deps
  * (search_api, facets, jsonapi_search_api). The downloader is constructed
  * directly with core services.
@@ -36,8 +36,6 @@ use Psr\Log\NullLogger;
 class SlackFileDownloaderTest extends KernelTestBase {
 
   /**
-   * Only the system module is needed to set up public:// stream wrapper.
-   *
    * {@inheritdoc}
    */
   protected static $modules = ['system'];
@@ -56,6 +54,20 @@ class SlackFileDownloaderTest extends KernelTestBase {
    * @var \Drupal\Core\File\FileSystemInterface
    */
   private FileSystemInterface $fileSystem;
+
+  /**
+   * {@inheritdoc}
+   *
+   * Creates the private:// directory and sets file_private_path so that
+   * CoreServiceProvider registers the private stream wrapper when the kernel
+   * boots.
+   */
+  protected function setUpFilesystem(): void {
+    parent::setUpFilesystem();
+    $private_dir = $this->siteDirectory . '/private';
+    mkdir($private_dir, 0775, TRUE);
+    $this->setSetting('file_private_path', $private_dir);
+  }
 
   /**
    * {@inheritdoc}
@@ -106,7 +118,7 @@ class SlackFileDownloaderTest extends KernelTestBase {
       new NullLogger(),
     );
 
-    $destUri = 'public://slack_archive/latest/files/F1.png';
+    $destUri = 'private://slack_archive/latest/files/F1.png';
     $urlPrivate = 'https://files.slack.com/files-pri/T1/F1.png';
 
     // Act.
@@ -123,7 +135,7 @@ class SlackFileDownloaderTest extends KernelTestBase {
     $realPath = $this->fileSystem->realpath($destUri);
     $this->assertNotFalse(
       $realPath,
-      'realpath() must resolve the public:// URI after download.',
+      'realpath() must resolve the private:// URI after download.',
     );
     $this->assertFileExists(
       (string) $realPath,
@@ -167,7 +179,7 @@ class SlackFileDownloaderTest extends KernelTestBase {
    */
   public function testSkipsDownloadWhenFileExistsWithMatchingSize(): void {
     // Arrange: pre-write the destination file.
-    $destUri = 'public://slack_archive/latest/files/F2.png';
+    $destUri = 'private://slack_archive/latest/files/F2.png';
     $existingContent = 'EXISTING';
 
     $dir = dirname($destUri);
@@ -245,7 +257,7 @@ class SlackFileDownloaderTest extends KernelTestBase {
       new NullLogger(),
     );
 
-    $destUri = 'public://slack_archive/latest/files/F9.png';
+    $destUri = 'private://slack_archive/latest/files/F9.png';
     $evilUrl = 'https://evil.example/files-pri/T1/F9.png';
 
     // Act.
@@ -288,7 +300,7 @@ class SlackFileDownloaderTest extends KernelTestBase {
     $result = $downloader->download(
       'http://files.slack.com/files-pri/T1/F8.png',
       self::TEST_TOKEN,
-      'public://slack_archive/latest/files/F8.png',
+      'private://slack_archive/latest/files/F8.png',
     );
 
     $this->assertCount(0, $history, 'No request may be sent over http.');
