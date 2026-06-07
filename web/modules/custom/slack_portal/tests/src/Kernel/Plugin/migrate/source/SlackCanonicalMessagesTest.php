@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\slack_portal\Kernel\Plugin\migrate\source;
 
-use Drupal\Core\File\FileSystemInterface;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\Tests\slack_portal\Traits\SlackArchiveFixturesTrait;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
@@ -18,6 +18,8 @@ use PHPUnit\Framework\Attributes\Group;
  */
 #[Group('slack_portal')]
 class SlackCanonicalMessagesTest extends KernelTestBase {
+
+  use SlackArchiveFixturesTrait;
 
   /**
    * Modules to enable (KernelTestBase does NOT resolve info.yml deps).
@@ -47,33 +49,7 @@ class SlackCanonicalMessagesTest extends KernelTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
-    $this->copyFixturesToPublic();
-  }
-
-  /**
-   * Copies the synthetic latest/ fixtures into the public:// archive tree.
-   */
-  private function copyFixturesToPublic(): void {
-    /** @var \Drupal\Core\File\FileSystemInterface $fs */
-    $fs = \Drupal::service('file_system');
-    $module_path = \Drupal::service('extension.list.module')->getPath('slack_portal');
-    $src = \Drupal::root() . '/' . $module_path . '/tests/fixtures/latest';
-
-    $base = 'public://slack_archive/latest';
-    $channelsDir = $base . '/channels';
-    $fs->prepareDirectory($base, FileSystemInterface::CREATE_DIRECTORY);
-    $fs->prepareDirectory($channelsDir, FileSystemInterface::CREATE_DIRECTORY);
-
-    file_put_contents($base . '/users.json', file_get_contents($src . '/users.json'));
-    file_put_contents($base . '/manifest.json', file_get_contents($src . '/manifest.json'));
-    foreach (scandir($src . '/channels') as $name) {
-      if (str_ends_with($name, '.json')) {
-        file_put_contents(
-          $base . '/channels/' . $name,
-          file_get_contents($src . '/channels/' . $name),
-        );
-      }
-    }
+    $this->copyCanonicalFixtures();
   }
 
   /**
