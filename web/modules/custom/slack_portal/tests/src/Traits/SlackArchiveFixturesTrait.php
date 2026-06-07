@@ -43,6 +43,17 @@ trait SlackArchiveFixturesTrait {
         );
       }
     }
+
+    $filesDir = $base . '/files';
+    $fs->prepareDirectory($filesDir, FileSystemInterface::CREATE_DIRECTORY);
+    $srcFiles = $src . '/files';
+    if (is_dir($srcFiles)) {
+      foreach (scandir($srcFiles) as $name) {
+        if ($name !== '.' && $name !== '..') {
+          file_put_contents($filesDir . '/' . $name, file_get_contents($srcFiles . '/' . $name));
+        }
+      }
+    }
   }
 
 }
