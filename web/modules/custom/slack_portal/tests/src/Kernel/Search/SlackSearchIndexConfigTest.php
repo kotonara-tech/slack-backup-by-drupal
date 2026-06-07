@@ -56,6 +56,16 @@ class SlackSearchIndexConfigTest extends KernelTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
+    // search_api_task entity + search_api_item table required before config.
+    $this->installEntitySchema('search_api_task');
+    $this->installSchema('search_api', ['search_api_item']);
+    // search_api.settings (tracking_page_size) must exist before index config
+    // is installed because postSave immediately tries to track items.
+    $this->installConfig(['search_api']);
+    // Index config triggers entity tracking which queries the node table.
+    $this->installEntitySchema('node');
+    $this->installEntitySchema('user');
+    $this->installEntitySchema('taxonomy_term');
     $this->installConfig(['slack_portal']);
   }
 

@@ -40,6 +40,8 @@ abstract class SlackMigrateKernelTestBase extends MigrateTestBase {
     'key',
     'encrypt',
     'real_aes',
+    'search_api',
+    'search_api_db',
     'slack_portal',
   ];
 
@@ -62,6 +64,12 @@ abstract class SlackMigrateKernelTestBase extends MigrateTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
+    // search_api_task entity + search_api_item table must be present before
+    // installConfig(['slack_portal']) because the index config fires item
+    // tracking (queries node table) on postSave.
+    $this->installEntitySchema('search_api_task');
+    $this->installSchema('search_api', ['search_api_item']);
+    $this->installConfig(['search_api']);
     $this->installEntitySchema('user');
     $this->installEntitySchema('node');
     $this->installEntitySchema('taxonomy_term');
