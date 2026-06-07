@@ -44,6 +44,7 @@ abstract class SlackMigrateKernelTestBase extends MigrateTestBase {
     'search_api_db',
     'serialization',
     'jsonapi',
+    'jsonapi_extras',
     'jsonapi_resources',
     'jsonapi_search_api',
     'jsonapi_search_api_facets',
