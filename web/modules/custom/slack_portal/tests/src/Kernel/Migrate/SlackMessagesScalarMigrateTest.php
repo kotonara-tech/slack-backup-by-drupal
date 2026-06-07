@@ -87,7 +87,9 @@ class SlackMessagesScalarMigrateTest extends MigrateTestBase {
     $pub = $this->loadBySlackTs('1700000001.000001');
     $this->assertTrue($pub->isPublished());
     $this->assertSame('Hello public channel', $pub->get('field_body')->value);
-    $this->assertSame('plain_text', $pub->get('field_body')->format);
+    /** @var \Drupal\Core\Field\FieldItemInterface $bodyItem */
+    $bodyItem = $pub->get('field_body')->first();
+    $this->assertSame('plain_text', $bodyItem->get('format')->getValue());
     $this->assertSame('Hello public channel', $pub->label());
     $this->assertSame('2023-11-14T22:13:21', $pub->get('field_posted_at')->value);
 
