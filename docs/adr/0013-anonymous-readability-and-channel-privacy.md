@@ -62,6 +62,12 @@ Option 1 は完全アーカイブ要件（87% を失う）に反するため不�
 - canonical の message 行にプライバシーフラグが無いため、**source plugin が channel_type を各行へ付与**する責務を負う
   （実装上の制約）。
 - public チャンネル投稿者の real_name が匿名に表示される（email 除外で機微性を抑えた上での容認トレードオフ）。
+- **添付ファイルの公開範囲は本 ADR では未対応（既知のギャップ・M3 で対処）**: private / im / mpim の添付も M1 で
+  `public://slack_archive/latest/files/` に保存され、Web サーバが直接配信し得る。M2 は各ファイルを managed `file`
+  エンティティ化するため、JSON:API `file--file` 経由で URI が列挙され得る（匿名アクセスは `access content` 権限の有無に依存）。
+  本 ADR の `status` gating は node 本文のみを対象とし、ファイル実体は対象外。**M3 の認証導入時に対処する**
+  （`private://` への移送／`file--file` JSON:API リソース無効化／`slack_archive/` URI のファイルアクセス制御 のいずれか）。
+  追随は `docs/plan/03-jsonapi-and-search.md`。
 
 ## Confirmation
 - [x] Kernel: `private_channel` / `im` / `mpim` fixture のメッセージ node が **unpublished（status=0）**、
