@@ -56,18 +56,7 @@ class SlackCanonicalFilesTest extends KernelTestBase {
    * The source yields one row per archive file with id/uri/filename.
    */
   public function testListsArchiveFiles(): void {
-    $manager = \Drupal::service('plugin.manager.migration');
-    $migration = $manager->createStubMigration([
-      'id' => 'slack_files_source_test',
-      'source' => ['plugin' => 'slack_canonical_files'],
-      'process' => [],
-      'destination' => ['plugin' => 'null'],
-    ]);
-    $rows = [];
-    foreach ($migration->getSourcePlugin() as $row) {
-      /** @var \Drupal\migrate\Row $row */
-      $rows[] = $row->getSource();
-    }
+    $rows = $this->sourceRowsFor('slack_canonical_files');
     $this->assertCount(1, $rows);
     $this->assertSame('F_LOCAL', $rows[0]['id']);
     $this->assertSame('F_LOCAL.png', $rows[0]['filename']);

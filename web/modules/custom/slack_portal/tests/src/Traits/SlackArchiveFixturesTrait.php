@@ -56,4 +56,28 @@ trait SlackArchiveFixturesTrait {
     }
   }
 
+  /**
+   * Iterates a migrate source plugin via a null-destination stub migration.
+   *
+   * @param string $sourcePluginId
+   *   The source plugin id (e.g. slack_canonical_messages).
+   *
+   * @return array<int,array<string,mixed>>
+   *   The raw source row arrays.
+   */
+  protected function sourceRowsFor(string $sourcePluginId): array {
+    $migration = \Drupal::service('plugin.manager.migration')->createStubMigration([
+      'id' => $sourcePluginId . '_source_test',
+      'source' => ['plugin' => $sourcePluginId],
+      'process' => [],
+      'destination' => ['plugin' => 'null'],
+    ]);
+    $rows = [];
+    foreach ($migration->getSourcePlugin() as $row) {
+      /** @var \Drupal\migrate\Row $row */
+      $rows[] = $row->getSource();
+    }
+    return $rows;
+  }
+
 }
