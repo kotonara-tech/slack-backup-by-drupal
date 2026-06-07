@@ -9,65 +9,15 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\slack_portal\Kernel\Search;
 
-use Drupal\KernelTests\KernelTestBase;
 use Drupal\search_api\Entity\Server;
+use Drupal\Tests\slack_portal\Kernel\SlackMigrateKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Verifies the M3 Search API DB server config (slack_db) installs correctly.
  */
 #[Group('slack_portal')]
-class SlackSearchServerConfigTest extends KernelTestBase {
-
-  /**
-   * Modules to enable.
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'system',
-    'user',
-    'field',
-    'text',
-    'filter',
-    'taxonomy',
-    'node',
-    'datetime',
-    'file',
-    'migrate',
-    'migrate_plus',
-    'key',
-    'encrypt',
-    'real_aes',
-    'search_api',
-    'search_api_db',
-    'serialization',
-    'jsonapi',
-    'jsonapi_extras',
-    'jsonapi_resources',
-    'jsonapi_search_api',
-    'jsonapi_search_api_facets',
-    'facets',
-    'slack_portal',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp(): void {
-    parent::setUp();
-    // search_api_task entity + search_api_item table required before config;
-    // the index config that also lives in slack_portal/config/install triggers
-    // item tracking on postSave, so all node/user/taxonomy_term schemas must
-    // be present before installConfig(['slack_portal']).
-    $this->installEntitySchema('search_api_task');
-    $this->installSchema('search_api', ['search_api_item']);
-    $this->installConfig(['search_api']);
-    $this->installEntitySchema('node');
-    $this->installEntitySchema('user');
-    $this->installEntitySchema('taxonomy_term');
-    $this->installConfig(['slack_portal']);
-  }
+class SlackSearchServerConfigTest extends SlackMigrateKernelTestBase {
 
   /**
    * The slack_db server loads after config install.

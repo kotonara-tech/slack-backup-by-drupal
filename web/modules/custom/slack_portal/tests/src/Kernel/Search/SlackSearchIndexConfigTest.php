@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\slack_portal\Kernel\Search;
 
-use Drupal\KernelTests\KernelTestBase;
 use Drupal\search_api\Entity\Index;
+use Drupal\Tests\slack_portal\Kernel\SlackMigrateKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
@@ -24,57 +24,7 @@ use PHPUnit\Framework\Attributes\Group;
  *        and indexes directly.
  */
 #[Group('slack_portal')]
-class SlackSearchIndexConfigTest extends KernelTestBase {
-
-  /**
-   * Modules to enable.
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'system',
-    'user',
-    'field',
-    'text',
-    'filter',
-    'taxonomy',
-    'node',
-    'datetime',
-    'file',
-    'migrate',
-    'migrate_plus',
-    'key',
-    'encrypt',
-    'real_aes',
-    'search_api',
-    'search_api_db',
-    'serialization',
-    'jsonapi',
-    'jsonapi_extras',
-    'jsonapi_resources',
-    'jsonapi_search_api',
-    'jsonapi_search_api_facets',
-    'facets',
-    'slack_portal',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp(): void {
-    parent::setUp();
-    // search_api_task entity + search_api_item table required before config.
-    $this->installEntitySchema('search_api_task');
-    $this->installSchema('search_api', ['search_api_item']);
-    // search_api.settings (tracking_page_size) must exist before index config
-    // is installed because postSave immediately tries to track items.
-    $this->installConfig(['search_api']);
-    // Index config triggers entity tracking which queries the node table.
-    $this->installEntitySchema('node');
-    $this->installEntitySchema('user');
-    $this->installEntitySchema('taxonomy_term');
-    $this->installConfig(['slack_portal']);
-  }
+class SlackSearchIndexConfigTest extends SlackMigrateKernelTestBase {
 
   /**
    * The slack_messages index loads after config install.
