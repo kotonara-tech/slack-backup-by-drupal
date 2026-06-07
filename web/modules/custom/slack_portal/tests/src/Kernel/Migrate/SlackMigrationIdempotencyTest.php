@@ -10,56 +10,14 @@ declare(strict_types=1);
 namespace Drupal\Tests\slack_portal\Kernel\Migrate;
 
 use Drupal\node\Entity\Node;
-use Drupal\Tests\migrate\Kernel\MigrateTestBase;
-use Drupal\Tests\slack_portal\Traits\SlackArchiveFixturesTrait;
+use Drupal\Tests\slack_portal\Kernel\SlackMigrateKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Verifies re-running migrations is idempotent and edits re-import in place.
  */
 #[Group('slack_portal')]
-class SlackMigrationIdempotencyTest extends MigrateTestBase {
-
-  use SlackArchiveFixturesTrait;
-
-  /**
-   * Modules to enable.
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'system',
-    'user',
-    'field',
-    'text',
-    'filter',
-    'taxonomy',
-    'node',
-    'datetime',
-    'file',
-    'migrate',
-    'migrate_plus',
-    'key',
-    'encrypt',
-    'real_aes',
-    'slack_portal',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp(): void {
-    parent::setUp();
-    $this->installEntitySchema('user');
-    $this->installEntitySchema('node');
-    $this->installEntitySchema('taxonomy_term');
-    $this->installEntitySchema('file');
-    $this->installSchema('node', ['node_access']);
-    $this->installSchema('file', ['file_usage']);
-    $this->installConfig(['filter']);
-    $this->installConfig(['slack_portal']);
-    $this->copyCanonicalFixtures();
-  }
+class SlackMigrationIdempotencyTest extends SlackMigrateKernelTestBase {
 
   /**
    * Loads slack_message nodes by property, resetting the static cache first.
@@ -102,8 +60,10 @@ class SlackMigrationIdempotencyTest extends MigrateTestBase {
 
   /**
    * Loads the single slack_message node with the given field_slack_ts.
+   *
+   * Overrides the base to reset the entity cache before loading.
    */
-  private function loadBySlackTs(string $ts): Node {
+  protected function loadBySlackTs(string $ts): Node {
     $nodes = $this->loadFreshNodes([
       'type' => 'slack_message',
       'field_slack_ts' => $ts,

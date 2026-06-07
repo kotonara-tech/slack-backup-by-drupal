@@ -9,51 +9,14 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\slack_portal\Kernel\Migrate;
 
-use Drupal\Tests\migrate\Kernel\MigrateTestBase;
-use Drupal\Tests\slack_portal\Traits\SlackArchiveFixturesTrait;
+use Drupal\Tests\slack_portal\Kernel\SlackMigrateKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Verifies canonical users migrate into slack_users terms without email.
  */
 #[Group('slack_portal')]
-class SlackUsersMigrateTest extends MigrateTestBase {
-
-  use SlackArchiveFixturesTrait;
-
-  /**
-   * Modules to enable.
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'system',
-    'user',
-    'field',
-    'text',
-    'filter',
-    'taxonomy',
-    'node',
-    'datetime',
-    'file',
-    'migrate',
-    'migrate_plus',
-    'key',
-    'encrypt',
-    'real_aes',
-    'slack_portal',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp(): void {
-    parent::setUp();
-    $this->installEntitySchema('user');
-    $this->installEntitySchema('taxonomy_term');
-    $this->installConfig(['slack_portal']);
-    $this->copyCanonicalFixtures();
-  }
+class SlackUsersMigrateTest extends SlackMigrateKernelTestBase {
 
   /**
    * Users become terms with their fields set and NO email field present.

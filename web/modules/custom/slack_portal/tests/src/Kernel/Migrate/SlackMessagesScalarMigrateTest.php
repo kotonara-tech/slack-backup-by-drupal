@@ -9,70 +9,14 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\slack_portal\Kernel\Migrate;
 
-use Drupal\Tests\migrate\Kernel\MigrateTestBase;
-use Drupal\Tests\slack_portal\Traits\SlackArchiveFixturesTrait;
+use Drupal\Tests\slack_portal\Kernel\SlackMigrateKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
-use Drupal\node\Entity\Node;
 
 /**
  * Verifies canonical messages migrate into slack_message nodes (scalars).
  */
 #[Group('slack_portal')]
-class SlackMessagesScalarMigrateTest extends MigrateTestBase {
-
-  use SlackArchiveFixturesTrait;
-
-  /**
-   * Modules to enable.
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'system',
-    'user',
-    'field',
-    'text',
-    'filter',
-    'taxonomy',
-    'node',
-    'datetime',
-    'file',
-    'migrate',
-    'migrate_plus',
-    'key',
-    'encrypt',
-    'real_aes',
-    'slack_portal',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp(): void {
-    parent::setUp();
-    $this->installEntitySchema('user');
-    $this->installEntitySchema('node');
-    $this->installEntitySchema('taxonomy_term');
-    $this->installEntitySchema('file');
-    $this->installSchema('node', ['node_access']);
-    $this->installSchema('file', ['file_usage']);
-    $this->installConfig(['filter']);
-    $this->installConfig(['slack_portal']);
-    $this->copyCanonicalFixtures();
-  }
-
-  /**
-   * Loads the single slack_message node having the given field_slack_ts.
-   */
-  private function loadBySlackTs(string $ts): Node {
-    $nodes = \Drupal::entityTypeManager()->getStorage('node')->loadByProperties([
-      'type' => 'slack_message',
-      'field_slack_ts' => $ts,
-    ]);
-    $node = reset($nodes);
-    $this->assertNotFalse($node, "No node for slack_ts $ts");
-    return $node;
-  }
+class SlackMessagesScalarMigrateTest extends SlackMigrateKernelTestBase {
 
   /**
    * Scalars, status (privacy), title and posted_at migrate correctly.

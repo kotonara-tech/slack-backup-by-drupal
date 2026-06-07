@@ -9,43 +9,20 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\slack_portal\Kernel\Migrate;
 
-use Drupal\Tests\migrate\Kernel\MigrateTestBase;
-use Drupal\Tests\slack_portal\Traits\SlackArchiveFixturesTrait;
+use Drupal\Tests\slack_portal\Kernel\SlackMigrateKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Verifies cross-channel slack_ts collisions do not overwrite each other.
  */
 #[Group('slack_portal')]
-class SlackMessagesCompositeIdMigrateTest extends MigrateTestBase {
-
-  use SlackArchiveFixturesTrait;
-
-  /**
-   * Modules to enable.
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'system', 'user', 'field', 'text', 'filter', 'taxonomy', 'node',
-    'datetime', 'file', 'migrate', 'migrate_plus', 'key', 'encrypt',
-    'real_aes', 'slack_portal',
-  ];
+class SlackMessagesCompositeIdMigrateTest extends SlackMigrateKernelTestBase {
 
   /**
    * {@inheritdoc}
    */
   protected function setUp(): void {
     parent::setUp();
-    $this->installEntitySchema('user');
-    $this->installEntitySchema('node');
-    $this->installEntitySchema('taxonomy_term');
-    $this->installEntitySchema('file');
-    $this->installSchema('node', ['node_access']);
-    $this->installSchema('file', ['file_usage']);
-    $this->installConfig(['filter']);
-    $this->installConfig(['slack_portal']);
-    $this->copyCanonicalFixtures();
 
     // Add a second public channel reusing an existing slack_ts (collision).
     $extra = [

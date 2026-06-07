@@ -9,51 +9,14 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\slack_portal\Kernel\Migrate;
 
-use Drupal\Tests\migrate\Kernel\MigrateTestBase;
-use Drupal\Tests\slack_portal\Traits\SlackArchiveFixturesTrait;
+use Drupal\Tests\slack_portal\Kernel\SlackMigrateKernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Verifies canonical channels migrate into slack_channels taxonomy terms.
  */
 #[Group('slack_portal')]
-class SlackChannelsMigrateTest extends MigrateTestBase {
-
-  use SlackArchiveFixturesTrait;
-
-  /**
-   * Modules to enable (KernelTestBase does NOT resolve info.yml deps).
-   *
-   * @var string[]
-   */
-  protected static $modules = [
-    'system',
-    'user',
-    'field',
-    'text',
-    'filter',
-    'taxonomy',
-    'node',
-    'datetime',
-    'file',
-    'migrate',
-    'migrate_plus',
-    'key',
-    'encrypt',
-    'real_aes',
-    'slack_portal',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp(): void {
-    parent::setUp();
-    $this->installEntitySchema('taxonomy_term');
-    $this->installEntitySchema('user');
-    $this->installConfig(['slack_portal']);
-    $this->copyCanonicalFixtures();
-  }
+class SlackChannelsMigrateTest extends SlackMigrateKernelTestBase {
 
   /**
    * The migration creates one term per channel with id + type fields set.
