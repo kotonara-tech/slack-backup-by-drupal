@@ -75,6 +75,7 @@ class SlackCanonicalFilesTest extends KernelTestBase {
       'public://slack_archive/latest/files/F_LOCAL.png',
       $rows[0]['uri'],
     );
+    $this->assertStringEndsWith('.png', $rows[0]['uri']);
   }
 
 }
