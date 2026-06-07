@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "channel": {
+    "id": "D_IM001",
+    "name": "D_IM001",
+    "type": "im",
+    "is_private": true,
+    "is_im": true,
+    "is_mpim": false,
+    "members": [],
+    "topic": "",
+    "purpose": ""
+  },
+  "messages": [
+    {
+      "slack_ts": "1700002000.000001",
+      "channel_id": "D_IM001",
+      "user_id": "U_BOB",
+      "bot_id": null,
+      "username": null,
+      "type": "message",
+      "subtype": null,
+      "text": "direct message hello",
+      "posted_at": "2023-11-14T22:46:40Z",
+      "edited": false,
+      "thread_ts": null,
+      "reply_count": 0,
+      "reactions": [],
+      "files": []
+    }
+  ]
+}

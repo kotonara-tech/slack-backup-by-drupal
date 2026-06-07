@@ -1,0 +1,11 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - slack_portal
+name: 'Slack Channels'
+vid: slack_channels
+description: 'Slack チャンネルを表す taxonomy（migrate 取込先）。'
+weight: 0
+new_revision: false

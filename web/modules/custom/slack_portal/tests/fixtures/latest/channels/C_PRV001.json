@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "channel": {
+    "id": "C_PRV001",
+    "name": "secret-project",
+    "type": "private_channel",
+    "is_private": true,
+    "is_im": false,
+    "is_mpim": false,
+    "members": [],
+    "topic": "",
+    "purpose": ""
+  },
+  "messages": [
+    {
+      "slack_ts": "1700001000.000001",
+      "channel_id": "C_PRV001",
+      "user_id": "U_ALICE",
+      "bot_id": null,
+      "username": null,
+      "type": "message",
+      "subtype": null,
+      "text": "private channel message",
+      "posted_at": "2023-11-14T22:30:00Z",
+      "edited": false,
+      "thread_ts": null,
+      "reply_count": 0,
+      "reactions": [],
+      "files": []
+    }
+  ]
+}

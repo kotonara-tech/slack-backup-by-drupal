@@ -8,6 +8,7 @@
 - [ ] (large) jsonapi_search_api：`/jsonapi/index/slack_messages?filter[fulltext]=...` が全文検索結果を返す
 - [ ] (large) facets：channel / posted_at / user で facet が返る
 - [ ] (medium) jsonapi_extras：不要リソース無効化・read-only hardening
+- [ ] (medium) **ファイル添付のプライバシー（ADR-0013 既知ギャップの追随）**：private / im / mpim の添付（`public://slack_archive/latest/files/`）を匿名に列挙/直接 DL させない（`private://` へ移送 ／ `file--file` JSON:API リソース無効化 ／ `slack_archive/` URI のファイルアクセス制御 のいずれか）。published node 経由の添付のみ露出させる。
 - [ ] (large) CORS：frontend origin（http://localhost:3000）からの preflight/GET が通る
 - [ ] ADR-0005 / ADR-0008 を `accepted` に（documentor）
 

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-07T00:00:00Z",
+  "counts": {
+    "channels": 4,
+    "failed": 0,
+    "messages": 10,
+    "users": 3,
+    "files": 1
+  },
+  "channels": [
+    {
+      "id": "C_PUB001",
+      "name": "general",
+      "type": "public_channel",
+      "file": "channels/C_PUB001.json"
+    },
+    {
+      "id": "C_PRV001",
+      "name": "secret-project",
+      "type": "private_channel",
+      "file": "channels/C_PRV001.json"
+    },
+    {
+      "id": "D_IM001",
+      "name": "D_IM001",
+      "type": "im",
+      "file": "channels/D_IM001.json"
+    },
+    {
+      "id": "G_MPIM001",
+      "name": "mpdm-alice--bob-1",
+      "type": "mpim",
+      "file": "channels/G_MPIM001.json"
+    }
+  ]
+}

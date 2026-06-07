@@ -1,0 +1,24 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - slack_portal
+id: slack_files
+label: 'Slack files'
+migration_group: slack_portal
+migration_tags:
+  - 'Slack Portal'
+source:
+  plugin: slack_canonical_files
+process:
+  uri: uri
+  filename: filename
+  status:
+    plugin: default_value
+    default_value: 1
+destination:
+  plugin: 'entity:file'
+migration_dependencies:
+  required: []
+  optional: []

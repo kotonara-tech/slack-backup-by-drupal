@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_thread_ts
+    - node.type.slack_message
+  enforced:
+    module:
+      - slack_portal
+id: node.slack_message.field_thread_ts
+field_name: field_thread_ts
+entity_type: node
+bundle: slack_message
+label: 'Thread TS'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

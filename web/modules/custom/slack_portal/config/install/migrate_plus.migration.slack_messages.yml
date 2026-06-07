@@ -1,0 +1,69 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - slack_portal
+id: slack_messages
+label: 'Slack messages'
+migration_group: slack_portal
+migration_tags:
+  - 'Slack Portal'
+source:
+  plugin: slack_canonical_messages
+  track_changes: true
+process:
+  title:
+    plugin: slack_message_title
+    source:
+      - text
+      - slack_ts
+  'field_body/value': text
+  'field_body/format':
+    plugin: default_value
+    default_value: plain_text
+  field_slack_ts: slack_ts
+  field_slack_user_id: user_id
+  field_posted_at:
+    plugin: slack_timestamp_to_datetime
+    source: slack_ts
+  field_thread_ts: thread_ts
+  field_subtype: subtype
+  field_edited: edited
+  field_reply_count: reply_count
+  field_reaction_total: reaction_total
+  field_reactions:
+    plugin: slack_reactions_to_json
+    source: reactions
+  status:
+    plugin: static_map
+    source: channel_type
+    map:
+      public_channel: 1
+    default_value: 0
+  field_channel:
+    plugin: migration_lookup
+    migration: slack_channels
+    source: channel_id
+    no_stub: true
+  field_slack_user:
+    - plugin: skip_on_empty
+      method: process
+      source: user_id
+    - plugin: migration_lookup
+      migration: slack_users
+      no_stub: true
+  field_attachments:
+    plugin: migration_lookup
+    migration: slack_files
+    source: file_ids
+    no_stub: true
+destination:
+  plugin: 'entity:node'
+  default_bundle: slack_message
+migration_dependencies:
+  required:
+    - slack_channels
+    - slack_users
+    - slack_files
+  optional: []

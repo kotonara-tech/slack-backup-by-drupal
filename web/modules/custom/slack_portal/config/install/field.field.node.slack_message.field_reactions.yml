@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_reactions
+    - node.type.slack_message
+  enforced:
+    module:
+      - slack_portal
+id: node.slack_message.field_reactions
+field_name: field_reactions
+entity_type: node
+bundle: slack_message
+label: 'Reactions (JSON)'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

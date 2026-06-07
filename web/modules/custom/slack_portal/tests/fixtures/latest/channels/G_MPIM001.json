@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "channel": {
+    "id": "G_MPIM001",
+    "name": "mpdm-alice--bob-1",
+    "type": "mpim",
+    "is_private": true,
+    "is_im": false,
+    "is_mpim": true,
+    "members": [],
+    "topic": "",
+    "purpose": ""
+  },
+  "messages": [
+    {
+      "slack_ts": "1700003000.000001",
+      "channel_id": "G_MPIM001",
+      "user_id": "U_ALICE",
+      "bot_id": null,
+      "username": null,
+      "type": "message",
+      "subtype": null,
+      "text": "group dm message",
+      "posted_at": "2023-11-14T23:03:20Z",
+      "edited": false,
+      "thread_ts": null,
+      "reply_count": 0,
+      "reactions": [],
+      "files": []
+    }
+  ]
+}

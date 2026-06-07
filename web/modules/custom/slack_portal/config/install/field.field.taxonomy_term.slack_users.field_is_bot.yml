@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_is_bot
+    - taxonomy.vocabulary.slack_users
+  enforced:
+    module:
+      - slack_portal
+id: taxonomy_term.slack_users.field_is_bot
+field_name: field_is_bot
+entity_type: taxonomy_term
+bundle: slack_users
+label: 'Is Bot'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  on_label: 'On'
+  off_label: 'Off'
+field_type: boolean
