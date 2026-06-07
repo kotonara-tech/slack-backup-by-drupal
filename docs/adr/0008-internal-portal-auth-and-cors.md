@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-06-01
 decision-makers: [Ryuto]
 consulted: []
@@ -29,7 +29,7 @@ informed: [dev team]
 - ネットワーク境界に依存。公開時は認証追加が必要。
 
 ## Confirmation
-- [ ] Functional: 匿名で read 200、write 403/405。CORS preflight が frontend origin で通る。
+- [x] Functional: 匿名で read 200（published のみ）、write 405。CORS preflight が frontend origin（`http://localhost:3000`）で通る（M3 `services.yml cors.config` 実装・Functional テストで検証済み）。
 
 ## More Information
 - Lullabot Decoupled Drupal / JSON:API permission。関連: ADR-0005, ADR-0009。

@@ -35,3 +35,4 @@ informed: [dev team]
 
 ## More Information
 - canonical スキーマは Milestone 1 で確定（`docs/spec/canonical-json.md`）。関連: ADR-0003, ADR-0006, ADR-0009, ADR-0012（ポータル管理 ingest）。
+- 保存先は ADR-0014 で `private://` に変更（PII の Web 露出遮断）。保存形式・DB の決定自体は本 ADR が正典のまま不変。

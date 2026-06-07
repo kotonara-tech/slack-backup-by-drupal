@@ -65,8 +65,8 @@ Option 1 は完全アーカイブ要件（87% を失う）に反するため不�
 - **添付ファイルの公開範囲は本 ADR では未対応（既知のギャップ・M3 で対処）**: private / im / mpim の添付も M1 で
   `public://slack_archive/latest/files/` に保存され、Web サーバが直接配信し得る。M2 は各ファイルを managed `file`
   エンティティ化するため、JSON:API `file--file` 経由で URI が列挙され得る（匿名アクセスは `access content` 権限の有無に依存）。
-  本 ADR の `status` gating は node 本文のみを対象とし、ファイル実体は対象外。**M3 の認証導入時に対処する**
-  （`private://` への移送／`file--file` JSON:API リソース無効化／`slack_archive/` URI のファイルアクセス制御 のいずれか）。
+  本 ADR の `status` gating は node 本文のみを対象とし、ファイル実体は対象外。
+  **M3 で解決（ADR-0014: `private://` 移送 ＋ `hook_file_download` ＋ `hook_taxonomy_term_access`）**。
   追随は `docs/plan/03-jsonapi-and-search.md`。
 
 ## Confirmation
@@ -76,7 +76,7 @@ Option 1 は完全アーカイブ要件（87% を失う）に反するため不�
       （public チャンネル 15 / private・im・mpim 104）で gating が機能。
 - [x] users migration が **email をマップしない**（`slack_users` に `field_email` が存在しない＝
       `SlackUsersMigrateTest` で `hasField('field_email') === false`）。
-- [ ] M3: Search API index が **published のみ**を対象にする（datasource の bundle/status フィルタ）。plan/03 へ申し送り。
+- [x] M3: Search API index が **published のみ**を対象にする（`entity_status` + `content_access` プロセッサ）。M3 実装済み（ADR-0014・plan/03）。
 
 ## More Information
 - 関連: [ADR-0005](0005-headless-drupal-jsonapi-search.md)（JSON:API read-only＋Search API DB）、
