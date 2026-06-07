@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_slack_user_id
+    - taxonomy.vocabulary.slack_users
+  enforced:
+    module:
+      - slack_portal
+id: taxonomy_term.slack_users.field_slack_user_id
+field_name: field_slack_user_id
+entity_type: taxonomy_term
+bundle: slack_users
+label: 'Slack User ID'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

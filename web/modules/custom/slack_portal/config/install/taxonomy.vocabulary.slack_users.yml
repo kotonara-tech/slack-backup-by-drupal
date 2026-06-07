@@ -1,0 +1,11 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - slack_portal
+name: 'Slack Users'
+vid: slack_users
+description: 'Slack ユーザを表す taxonomy（migrate 取込先・email は保持しない）。'
+weight: 0
+new_revision: false

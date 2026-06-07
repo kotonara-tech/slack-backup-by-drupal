@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_slack_channel_id
+    - taxonomy.vocabulary.slack_channels
+  enforced:
+    module:
+      - slack_portal
+id: taxonomy_term.slack_channels.field_slack_channel_id
+field_name: field_slack_channel_id
+entity_type: taxonomy_term
+bundle: slack_channels
+label: 'Slack Channel ID'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string
