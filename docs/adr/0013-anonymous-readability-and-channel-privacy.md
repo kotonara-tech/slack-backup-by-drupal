@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-06-07
 decision-makers: [Ryuto]
 consulted: []
@@ -64,10 +64,13 @@ Option 1 は完全アーカイブ要件（87% を失う）に反するため不�
 - public チャンネル投稿者の real_name が匿名に表示される（email 除外で機微性を抑えた上での容認トレードオフ）。
 
 ## Confirmation
-- [ ] Kernel/Functional: `private_channel` / `im` / `mpim` fixture のメッセージ node が **unpublished（status=0）**、
-      `public_channel` が **published（status=1）** になる。
-- [ ] users migration が **email をマップしない**（`slack_users` に `field_email` が存在しない）。
-- [ ] M3: Search API index が **published のみ**を対象にする（datasource の bundle/status フィルタ）。
+- [x] Kernel: `private_channel` / `im` / `mpim` fixture のメッセージ node が **unpublished（status=0）**、
+      `public_channel` が **published（status=1）** になる（`SlackMessagesScalarMigrateTest` /
+      `SlackMigrationIdempotencyTest`）。実 export では **916 件中 published 141 / unpublished 775**
+      （public チャンネル 15 / private・im・mpim 104）で gating が機能。
+- [x] users migration が **email をマップしない**（`slack_users` に `field_email` が存在しない＝
+      `SlackUsersMigrateTest` で `hasField('field_email') === false`）。
+- [ ] M3: Search API index が **published のみ**を対象にする（datasource の bundle/status フィルタ）。plan/03 へ申し送り。
 
 ## More Information
 - 関連: [ADR-0005](0005-headless-drupal-jsonapi-search.md)（JSON:API read-only＋Search API DB）、
