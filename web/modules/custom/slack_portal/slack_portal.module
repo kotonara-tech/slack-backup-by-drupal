@@ -11,7 +11,11 @@
 
 declare(strict_types=1);
 
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\file\FileInterface;
+use Drupal\taxonomy\TermInterface;
 
 /**
  * Implements hook_file_download().
@@ -60,4 +64,45 @@ function slack_portal_file_download(string $uri): array|int|null {
   }
 
   return -1;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_access() for taxonomy_term.
+ *
+ * Hides private channel names: anonymous (and any non-admin) may not view a
+ * slack_channels term whose channel type is not public_channel. This protects
+ * private/im/mpim channel names in both the JSON:API term collection and in
+ * relationship includes. slack_users terms are unaffected (ADR-0013).
+ */
+function slack_portal_taxonomy_term_access(
+  EntityInterface $entity,
+  string $operation,
+  AccountInterface $account,
+): AccessResult {
+  if (
+    $operation !== 'view'
+    || !$entity instanceof TermInterface
+    || $entity->bundle() !== 'slack_channels'
+  ) {
+    return AccessResult::neutral();
+  }
+
+  $type = $entity->hasField('field_channel_type')
+    ? $entity->get('field_channel_type')->value
+    : NULL;
+
+  if (
+    $type === 'public_channel'
+    || $account->hasPermission('administer slack_portal')
+  ) {
+    return AccessResult::neutral()
+      ->addCacheContexts(['user.permissions'])
+      ->addCacheableDependency($entity);
+  }
+
+  return AccessResult::forbidden(
+    'Private Slack channel name is not anonymously viewable.',
+  )
+    ->addCacheContexts(['user.permissions'])
+    ->addCacheableDependency($entity);
 }
