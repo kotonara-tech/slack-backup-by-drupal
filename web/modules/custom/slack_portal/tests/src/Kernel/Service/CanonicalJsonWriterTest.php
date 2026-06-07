@@ -11,6 +11,7 @@ namespace Drupal\Tests\slack_portal\Kernel\Service;
 
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\slack_portal\CanonicalArchive;
 use Drupal\slack_portal\Service\CanonicalJsonWriter;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
@@ -164,9 +165,9 @@ class CanonicalJsonWriterTest extends KernelTestBase {
    * And baseDir() returns the expected stable base directory.
    */
   public function testWriteUsersAndManifestPaths(): void {
-    // Assert baseDir().
+    // Assert baseDir() equals the shared constant.
     $this->assertSame(
-      'public://slack_archive/latest',
+      CanonicalArchive::BASE_DIR,
       $this->writer->baseDir(),
       'baseDir() must return the stable archive base directory.',
     );

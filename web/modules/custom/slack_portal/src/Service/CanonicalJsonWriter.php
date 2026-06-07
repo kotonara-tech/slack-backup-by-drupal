@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Drupal\slack_portal\Service;
 
 use Drupal\Core\File\FileSystemInterface;
+use Drupal\slack_portal\CanonicalArchive;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,7 +49,7 @@ final class CanonicalJsonWriter {
    *   Always 'public://slack_archive/latest'.
    */
   public function baseDir(): string {
-    return 'public://slack_archive/latest';
+    return CanonicalArchive::BASE_DIR;
   }
 
   /**
