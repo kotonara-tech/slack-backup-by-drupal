@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "channel": {
+    "id": "C_PUB001",
+    "name": "general",
+    "type": "public_channel",
+    "is_private": false,
+    "is_im": false,
+    "is_mpim": false,
+    "members": [],
+    "topic": "全社の連絡",
+    "purpose": "雑談用"
+  },
+  "messages": [
+    {
+      "slack_ts": "1700000001.000001",
+      "channel_id": "C_PUB001",
+      "user_id": "U_ALICE",
+      "bot_id": null,
+      "username": null,
+      "type": "message",
+      "subtype": null,
+      "text": "Hello public channel",
+      "posted_at": "2023-11-14T22:13:21Z",
+      "edited": false,
+      "thread_ts": null,
+      "reply_count": 0,
+      "reactions": [],
+      "files": []
+    },
+    {
+      "slack_ts": "1700000010.000010",
+      "channel_id": "C_PUB001",
+      "user_id": "U_ALICE",
+      "bot_id": null,
+      "username": null,
+      "type": "message",
+      "subtype": null,
+      "text": "Thread start",
+      "posted_at": "2023-11-14T22:13:30Z",
+      "edited": false,
+      "thread_ts": "1700000010.000010",
+      "reply_count": 2,
+      "reactions": [],
+      "files": [],
+      "replies": [
+        {
+          "slack_ts": "1700000011.000011",
+          "channel_id": "C_PUB001",
+          "user_id": "U_BOB",
+          "bot_id": null,
+          "username": null,
+          "type": "message",
+          "subtype": null,
+          "text": "reply one",
+          "posted_at": "2023-11-14T22:13:31Z",
+          "edited": false,
+          "thread_ts": "1700000010.000010",
+          "reply_count": 0,
+          "reactions": [],
+          "files": []
+        },
+        {
+          "slack_ts": "1700000012.000012",
+          "channel_id": "C_PUB001",
+          "user_id": "U_ALICE",
+          "bot_id": null,
+          "username": null,
+          "type": "message",
+          "subtype": "thread_broadcast",
+          "text": "reply two broadcast",
+          "posted_at": "2023-11-14T22:13:32Z",
+          "edited": false,
+          "thread_ts": "1700000010.000010",
+          "reply_count": 0,
+          "reactions": [],
+          "files": []
+        }
+      ]
+    },
+    {
+      "slack_ts": "1700000012.000012",
+      "channel_id": "C_PUB001",
+      "user_id": "U_ALICE",
+      "bot_id": null,
+      "username": null,
+      "type": "message",
+      "subtype": "thread_broadcast",
+      "text": "reply two broadcast",
+      "posted_at": "2023-11-14T22:13:32Z",
+      "edited": false,
+      "thread_ts": "1700000010.000010",
+      "reply_count": 0,
+      "reactions": [],
+      "files": []
+    },
+    {
+      "slack_ts": "1700000020.000020",
+      "channel_id": "C_PUB001",
+      "user_id": "U_ALICE",
+      "bot_id": null,
+      "username": null,
+      "type": "message",
+      "subtype": null,
+      "text": "see file",
+      "posted_at": "2023-11-14T22:13:40Z",
+      "edited": false,
+      "thread_ts": null,
+      "reply_count": 0,
+      "reactions": [],
+      "files": [
+        {
+          "id": "F_LOCAL",
+          "name": "diagram.png",
+          "mimetype": "image/png",
+          "url_private": "REDACTED",
+          "local_path": "files/F_LOCAL.png"
+        },
+        {
+          "id": "F_REMOTE",
+          "name": "ext.png",
+          "mimetype": "image/png",
+          "url_private": "https://external.example.test/ext.png",
+          "local_path": null
+        }
+      ]
+    },
+    {
+      "slack_ts": "1700000030.000030",
+      "channel_id": "C_PUB001",
+      "user_id": "U_BOB",
+      "bot_id": null,
+      "username": null,
+      "type": "message",
+      "subtype": null,
+      "text": "original text",
+      "posted_at": "2023-11-14T22:13:50Z",
+      "edited": true,
+      "thread_ts": null,
+      "reply_count": 0,
+      "reactions": [
+        { "name": "thumbsup", "count": 2, "users": ["U_ALICE", "U_BOB"] },
+        { "name": "tada", "count": 1, "users": ["U_ALICE"] }
+      ],
+      "files": []
+    },
+    {
+      "slack_ts": "1700000040.000040",
+      "channel_id": "C_PUB001",
+      "user_id": null,
+      "bot_id": "B_BOT001",
+      "username": "incoming-webhook",
+      "type": "message",
+      "subtype": "bot_message",
+      "text": "automated post from a bot",
+      "posted_at": "2023-11-14T22:14:00Z",
+      "edited": false,
+      "thread_ts": null,
+      "reply_count": 0,
+      "reactions": [],
+      "files": []
+    }
+  ]
+}

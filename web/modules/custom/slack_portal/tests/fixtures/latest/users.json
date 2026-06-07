@@ -1,0 +1,32 @@
+[
+  {
+    "id": "U_ALICE",
+    "name": "alice",
+    "real_name": "Alice Anderson",
+    "display_name": "alice.a",
+    "email": "alice@example.test",
+    "is_bot": false,
+    "deleted": false,
+    "avatar": "https://avatars.example.test/alice_192.png"
+  },
+  {
+    "id": "U_BOB",
+    "name": "bob",
+    "real_name": "Bob Brown",
+    "display_name": "bob.b",
+    "email": "bob@example.test",
+    "is_bot": false,
+    "deleted": false,
+    "avatar": "https://avatars.example.test/bob_192.png"
+  },
+  {
+    "id": "U_BOTX",
+    "name": "botx",
+    "real_name": "Bot X",
+    "display_name": "botx",
+    "email": "",
+    "is_bot": true,
+    "deleted": false,
+    "avatar": "https://avatars.example.test/botx_192.png"
+  }
+]
