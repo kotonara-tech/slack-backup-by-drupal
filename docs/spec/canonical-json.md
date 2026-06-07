@@ -356,6 +356,9 @@ migrate_plus（JSON source）で取り込む際の主要キー対応の目安（
 ## 8. 関連ドキュメント
 
 - 生成パイプラインの詳細（how）: [docs/spec/ingest-pipeline.md](./ingest-pipeline.md)
+- 取込先 Drupal データモデル（what）: [docs/spec/data-model.md](./data-model.md)
+- migrate 取込手順（how）: [docs/spec/migrate.md](./migrate.md)
 - 保存形式の決定: [ADR-0004 — 保存形式＝canonical JSON ＋ MariaDB](../adr/0004-storage-canonical-json-and-mariadb.md)
 - Drupal データモデルと migrate: [ADR-0006 — Slack→Drupal データモデルと Migrate 取込](../adr/0006-slack-to-drupal-data-model-and-migrate.md)
+- 公開範囲（status/privacy・email 非取込）: [ADR-0013 — 匿名閲覧可否とチャンネルプライバシー](../adr/0013-anonymous-readability-and-channel-privacy.md)
 - secrets / PII 取扱: `.claude/rules/secrets-and-pii.md`

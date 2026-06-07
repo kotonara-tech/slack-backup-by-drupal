@@ -5,6 +5,8 @@
 > このドキュメントは「取得（fetch）→ 正規化 → 書き出し」の制御フローを対象とする。出力 JSON のスキーマ自体は別仕様で扱う。
 >
 > - 出力スキーマ: [docs/spec/canonical-json.md](./canonical-json.md)
+> - 取込先データモデル: [docs/spec/data-model.md](./data-model.md)
+> - Drupal への migrate 取込（次工程）: [docs/spec/migrate.md](./migrate.md)
 > - HTTP トリガ／ステータス API: [docs/spec/portal-api.md](./portal-api.md)
 > - トークン／資格情報の解決: [docs/spec/credentials.md](./credentials.md)
 > - 取得方式の決定: [ADR-0003 Slack 取得を PHP/Drupal ネイティブで実装](../adr/0003-slack-acquisition-php-native.md)
