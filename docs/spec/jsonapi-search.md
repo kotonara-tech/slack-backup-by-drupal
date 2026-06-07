@@ -153,7 +153,7 @@ GET /jsonapi/node/slack_message?include=field_channel,field_slack_user,field_att
 
 ## 5. 公開リソース（jsonapi_extras ホワイトリスト）
 
-`hook_install()` で `jsonapi.settings` の `default_disabled` を `TRUE` にセットし、明示的に有効化したリソースのみ公開する。
+`hook_install()` で `jsonapi_extras.settings` の `default_disabled` を `TRUE` にセットし、明示的に有効化したリソースのみ公開する。（`jsonapi.settings` には `read_only` のみ設定する。）
 
 | リソース | 用途 |
 |---|---|
