@@ -63,7 +63,7 @@ term の `name` ＝ユーザの `name`（ハンドル）。**`field_email` は�
 | `title`（base） | string(255) | 1 | text を 255 文字（mb 安全）に切詰、空なら `Message <slack_ts>`（process plugin `slack_message_title`） |
 | `status`（base） | boolean | 1 | `channel_type` 由来（§4.3） |
 | `field_body` | text_long（format `plain_text`） | 1 | `value`←text、`format`←`plain_text`（固定） |
-| `field_slack_ts` | string(255) | 1 | `slack_ts`（**migrate 一意キー**、チャンネル内一意・実質グローバル一意） |
+| `field_slack_ts` | string(255) | 1 | `slack_ts`（チャンネル内一意。migrate 一意キーは **複合 `[channel_id, slack_ts]`**＝[migrate.md](./migrate.md) §2.2） |
 | `field_posted_at` | datetime（`datetime_type: datetime`） | 1 | `slack_ts` の整数秒→`Y-m-d\TH:i:s`（UTC、process plugin `slack_timestamp_to_datetime`、`Z` 無し） |
 | `field_slack_user_id` | string(255) | 1 | `user_id`（常時保持。bot 等で null の場合あり） |
 | `field_channel` | entity_reference→taxonomy_term（target_bundles `slack_channels`, auto_create false） | 1 | `channel_id` を `slack_channels` migration で lookup（no_stub） |

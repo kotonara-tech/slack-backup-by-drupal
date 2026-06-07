@@ -43,7 +43,7 @@ migration は **migrate_plus の config entity**（`config/install/`、`migratio
 - `file_ids` = `files[]` のうち **`local_path` が非 null のものの `id`** のみ。
 - `posted_at` は **yield しない**（`slack_ts` から process plugin で導出。canonical の `posted_at` は `Z` 付きで datetime 格納形式と異なるため使わない）。
 
-`getIds()` = `{slack_ts: string}`。`track_changes: true`（編集された行の再取込）。
+`getIds()` = `{channel_id: string, slack_ts: string}`（**複合キー**。Slack `ts` はチャンネル内でのみ一意のため、channel_id と組にしてグローバル一意化し、チャンネル跨ぎの `slack_ts` 衝突による node 上書き＝データ欠落を防ぐ）。`track_changes: true`（編集された行の再取込）。
 
 行のフィールド: `slack_ts, channel_id, channel_type, user_id, bot_id, username, type, subtype, text, edited, thread_ts, reply_count, reactions(array), reaction_total(int), file_ids(array)`。
 
@@ -76,7 +76,7 @@ migration は **migrate_plus の config entity**（`config/install/`、`migratio
 
 ## 4. 冪等性・再取込・privacy
 
-- **冪等**: `ids: slack_ts`（messages）/ id（channels・users・files）。再 import で同一 id は同一エンティティへ update（重複生成なし）。実 export で 2 回目 import = **0 created / 0 updated / 0 failed**。
+- **冪等**: `ids`＝`[channel_id, slack_ts]`（messages、複合）／ id（channels・users・files）。再 import で同一 id は同一エンティティへ update（重複生成なし）。実 export で 2 回目 import = **0 created / 0 updated / 0 failed**。
 - **編集再取込**: `track_changes: true`。source 行のハッシュ変化（text/edited 変更等）を検出して該当行のみ再取込（新規 node を作らない）。
 - **privacy**: `status` を `channel_type` から導出（§3、[data-model.md](./data-model.md) §4.3）。
 - **files 非コピー**: `entity:file` は既存 `public://…/files/<name>` を指す managed file entity を作るのみ（移動/コピーしない）。`status: 1`（permanent）。

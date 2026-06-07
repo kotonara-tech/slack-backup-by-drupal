@@ -20,7 +20,7 @@ canonical JSON（ADR-0004）を Drupal のエンティティに落とし込み�
 3. Feeds モジュール
 
 ## Decision Outcome
-採用: **Option 2**。`slack_message` content type（`field_body`・`field_channel`/`field_slack_user` 参照・`field_slack_user_id`・`field_slack_ts`(一意=migrate id)・`field_posted_at`・`field_reactions`(JSON)＋`field_reaction_total`・`field_attachments`(file 参照)・`field_thread_ts`/`field_subtype`/`field_edited`/`field_reply_count`）＋ channel/user は taxonomy（`slack_channels`/`slack_users`）＋ file は managed file 参照。`migrate_plus` の JSON source（manifest/users）＋カスタム source（`slack_canonical_messages`/`slack_canonical_files`）で canonical JSON から取込（`ids` に `slack_ts` → 冪等、`track_changes` で編集再取込）。**channels→users→files→messages の依存順**。**公開範囲（status/privacy）・email 非取込は [ADR-0013](0013-anonymous-readability-and-channel-privacy.md) が gating**。確定仕様は `docs/spec/data-model.md`・`docs/spec/migrate.md`。
+採用: **Option 2**。`slack_message` content type（`field_body`・`field_channel`/`field_slack_user` 参照・`field_slack_user_id`・`field_slack_ts`(一意=migrate id)・`field_posted_at`・`field_reactions`(JSON)＋`field_reaction_total`・`field_attachments`(file 参照)・`field_thread_ts`/`field_subtype`/`field_edited`/`field_reply_count`）＋ channel/user は taxonomy（`slack_channels`/`slack_users`）＋ file は managed file 参照。`migrate_plus` の JSON source（manifest/users）＋カスタム source（`slack_canonical_messages`/`slack_canonical_files`）で canonical JSON から取込（messages の `ids` は複合 `[channel_id, slack_ts]`＝Slack ts はチャンネル内のみ一意のため → 冪等、`track_changes` で編集再取込）。**channels→users→files→messages の依存順**。**公開範囲（status/privacy）・email 非取込は [ADR-0013](0013-anonymous-readability-and-channel-privacy.md) が gating**。確定仕様は `docs/spec/data-model.md`・`docs/spec/migrate.md`。
 
 ## Consequences
 ### Positive
