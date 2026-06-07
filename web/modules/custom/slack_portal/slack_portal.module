@@ -10,3 +10,54 @@
  */
 
 declare(strict_types=1);
+
+use Drupal\file\FileInterface;
+
+/**
+ * Implements hook_file_download().
+ *
+ * Gates canonical-archive attachments: a private:// file under slack_archive
+ * is downloadable anonymously only if at least one referencing
+ * slack_message node is viewable by the current user (published nodes are
+ * viewable by anonymous; unpublished ones are not). Returns -1 to deny, a
+ * headers array to allow, or NULL for files this module does not own.
+ */
+function slack_portal_file_download(string $uri): array|int|null {
+  if (!str_contains($uri, 'slack_archive/')) {
+    return NULL;
+  }
+
+  $files = \Drupal::entityTypeManager()
+    ->getStorage('file')
+    ->loadByProperties(['uri' => $uri]);
+  $file = reset($files);
+  if (!$file instanceof FileInterface) {
+    return NULL;
+  }
+
+  $nids = \Drupal::entityTypeManager()
+    ->getStorage('node')
+    ->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'slack_message')
+    ->condition('field_attachments.target_id', $file->id())
+    ->execute();
+
+  if (!$nids) {
+    return -1;
+  }
+
+  $nodes = \Drupal::entityTypeManager()
+    ->getStorage('node')
+    ->loadMultiple($nids);
+  foreach ($nodes as $node) {
+    if ($node->access('view')) {
+      return [
+        'Content-Type' => $file->getMimeType(),
+        'Content-Length' => $file->getSize(),
+      ];
+    }
+  }
+
+  return -1;
+}

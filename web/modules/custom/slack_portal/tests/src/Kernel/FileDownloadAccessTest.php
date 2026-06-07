@@ -12,6 +12,8 @@ namespace Drupal\Tests\slack_portal\Kernel;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\file\Entity\File;
 use Drupal\node\Entity\Node;
+use Drupal\user\Entity\Role;
+use Drupal\user\RoleInterface;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
@@ -38,6 +40,15 @@ class FileDownloadAccessTest extends SlackMigrateKernelTestBase {
       'slack_files',
       'slack_messages',
     ]);
+
+    // Grant 'access content' to the anonymous role so published nodes are
+    // viewable, then rebuild node_access grants for the Kernel DB context.
+    $this->installConfig(['user']);
+    $anonRole = Role::load(RoleInterface::ANONYMOUS_ID);
+    assert($anonRole instanceof RoleInterface);
+    $anonRole->grantPermission('access content');
+    $anonRole->save();
+    node_access_rebuild();
 
     // Switch to anonymous so $node->access('view') reflects anon grants.
     \Drupal::currentUser()->setAccount(new AnonymousUserSession());
