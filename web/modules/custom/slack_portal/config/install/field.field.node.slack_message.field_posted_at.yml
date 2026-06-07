@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_posted_at
+    - node.type.slack_message
+  module:
+    - datetime
+  enforced:
+    module:
+      - slack_portal
+id: node.slack_message.field_posted_at
+field_name: field_posted_at
+entity_type: node
+bundle: slack_message
+label: 'Posted At'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: datetime

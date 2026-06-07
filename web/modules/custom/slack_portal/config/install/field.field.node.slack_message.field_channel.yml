@@ -1,0 +1,29 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_channel
+    - node.type.slack_message
+    - taxonomy.vocabulary.slack_channels
+  enforced:
+    module:
+      - slack_portal
+id: node.slack_message.field_channel
+field_name: field_channel
+entity_type: node
+bundle: slack_message
+label: 'Channel'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      slack_channels: slack_channels
+    sort:
+      field: _none
+    auto_create: false
+field_type: entity_reference

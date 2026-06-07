@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_edited
+    - node.type.slack_message
+  enforced:
+    module:
+      - slack_portal
+id: node.slack_message.field_edited
+field_name: field_edited
+entity_type: node
+bundle: slack_message
+label: 'Edited'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  on_label: 'On'
+  off_label: 'Off'
+field_type: boolean

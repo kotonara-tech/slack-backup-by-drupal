@@ -1,0 +1,29 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_slack_user
+    - node.type.slack_message
+    - taxonomy.vocabulary.slack_users
+  enforced:
+    module:
+      - slack_portal
+id: node.slack_message.field_slack_user
+field_name: field_slack_user
+entity_type: node
+bundle: slack_message
+label: 'Slack User'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      slack_users: slack_users
+    sort:
+      field: _none
+    auto_create: false
+field_type: entity_reference

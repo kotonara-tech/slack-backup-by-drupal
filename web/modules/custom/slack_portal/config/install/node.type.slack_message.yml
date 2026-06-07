@@ -1,0 +1,13 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - slack_portal
+name: 'Slack Message'
+type: slack_message
+description: 'Slack のメッセージ 1 件（migrate 取込先）。'
+help: null
+new_revision: true
+preview_mode: 1
+display_submitted: true
