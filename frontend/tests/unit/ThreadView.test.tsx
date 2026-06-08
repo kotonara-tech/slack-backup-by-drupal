@@ -33,6 +33,25 @@ describe("ThreadView", () => {
     expect(screen.getByText("ブロードキャスト返信")).toBeInTheDocument();
   });
 
+  it("トグルは aria-expanded と件数ラベルで開閉状態を伝える", () => {
+    renderUI(<ThreadView thread={parentThread} userMap={sampleUserMap} />);
+    const toggle = screen.getByTestId("thread-toggle-m-parent");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveTextContent("2件の返信を表示");
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveTextContent("返信を隠す");
+    expect(toggle).toHaveAttribute(
+      "aria-controls",
+      "thread-replies-m-parent",
+    );
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveTextContent("2件の返信を表示");
+  });
+
   it("返信のないスレッドはトグルを出さない", () => {
     renderUI(<ThreadView thread={standaloneThread} userMap={sampleUserMap} />);
     expect(screen.queryByTestId("thread-toggle-m-bot")).toBeNull();
