@@ -55,6 +55,7 @@ export function BrowsePanel() {
             userMap={userMap}
             channelSelected={selectedTid != null}
             isLoading={messages.isLoading}
+            isError={messages.isError}
           />
         </Stack>
       </AppShell.Main>

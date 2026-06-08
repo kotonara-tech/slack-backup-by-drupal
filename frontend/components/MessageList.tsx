@@ -13,6 +13,7 @@ interface MessageListProps {
   userMap: Record<string, User>;
   channelSelected?: boolean;
   isLoading?: boolean;
+  isError?: boolean;
 }
 
 export function MessageList({
@@ -20,6 +21,7 @@ export function MessageList({
   userMap,
   channelSelected = false,
   isLoading = false,
+  isError = false,
 }: MessageListProps) {
   if (!channelSelected) {
     return (
@@ -31,10 +33,20 @@ export function MessageList({
     );
   }
 
+  if (isError) {
+    return (
+      <Center mih={160}>
+        <Text c="red" role="alert" data-testid="messages-error">
+          メッセージの取得に失敗しました
+        </Text>
+      </Center>
+    );
+  }
+
   if (isLoading) {
     return (
       <Center mih={160}>
-        <Loader data-testid="messages-loading" />
+        <Loader data-testid="messages-loading" aria-label="メッセージを読み込み中" />
       </Center>
     );
   }

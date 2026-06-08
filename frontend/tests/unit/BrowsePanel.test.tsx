@@ -54,4 +54,13 @@ describe("BrowsePanel", () => {
     expect(screen.getByText("general")).toBeInTheDocument();
     expect(screen.getByTestId("browse-heading")).toBeInTheDocument();
   });
+
+  it("メッセージ取得失敗時はエラー表示を出す", () => {
+    vi.mocked(useChannelMessages).mockReturnValue(
+      asResult(undefined, { isError: true, isSuccess: false }),
+    );
+    renderUI(<BrowsePanel />);
+    fireEvent.click(screen.getByText("general"));
+    expect(screen.getByTestId("messages-error")).toBeInTheDocument();
+  });
 });
