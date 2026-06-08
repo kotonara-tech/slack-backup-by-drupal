@@ -76,5 +76,8 @@ describe("BrowsePanel", () => {
     expect(burger).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(burger);
     expect(burger).toHaveAttribute("aria-expanded", "true");
+    // 再クリックで閉じる（完全なトグル）。
+    fireEvent.click(burger);
+    expect(burger).toHaveAttribute("aria-expanded", "false");
   });
 });
