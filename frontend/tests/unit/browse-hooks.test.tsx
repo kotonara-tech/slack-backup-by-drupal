@@ -76,4 +76,13 @@ describe("browse hooks", () => {
     expect(channelMessagesQueryKey(1)).not.toEqual(channelMessagesQueryKey(2));
     expect(channelMessagesQueryKey(1)).toContain(1);
   });
+
+  it("useChannelMessages は取得失敗を isError で伝える", async () => {
+    vi.mocked(api.fetchChannelMessages).mockRejectedValue(new Error("boom"));
+    const { wrapper } = createWrapper();
+
+    const { result } = renderHook(() => useChannelMessages(1), { wrapper });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
 });

@@ -75,7 +75,7 @@ describe("MessageList", () => {
     expect(screen.getByTestId("no-channel")).toBeInTheDocument();
   });
 
-  it("読み込み中はローダを出す", () => {
+  it("読み込み中はアクセシブルなローダを出す", () => {
     renderUI(
       <MessageList
         threads={[]}
@@ -84,7 +84,20 @@ describe("MessageList", () => {
         isLoading
       />,
     );
-    expect(screen.getByTestId("messages-loading")).toBeInTheDocument();
+    // スクリーンリーダーに「読み込み中」を伝えるアクセシブル名を持つこと。
+    expect(screen.getByLabelText("メッセージを読み込み中")).toBeInTheDocument();
+  });
+
+  it("取得失敗時はエラー表示を出す", () => {
+    renderUI(
+      <MessageList
+        threads={[]}
+        userMap={sampleUserMap}
+        channelSelected
+        isError
+      />,
+    );
+    expect(screen.getByTestId("messages-error")).toBeInTheDocument();
   });
 
   it("メッセージ 0 件のときは空表示", () => {
