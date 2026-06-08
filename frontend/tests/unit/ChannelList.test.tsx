@@ -35,4 +35,9 @@ describe("ChannelList", () => {
     const active = screen.getByTestId("channel-2");
     expect(active).toHaveAttribute("data-active", "true");
   });
+
+  it("チャンネルが無いときは空のヒントを出す", () => {
+    renderUI(<ChannelList channels={[]} selectedTid={null} onSelect={vi.fn()} />);
+    expect(screen.getByTestId("channel-list-empty")).toBeInTheDocument();
+  });
 });
