@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MantineProvider } from "@mantine/core";
 import type { ReactNode } from "react";
 
@@ -63,5 +63,13 @@ describe("MessageCard", () => {
     expect(screen.getByTestId("message-body")).toHaveStyle({
       whiteSpace: "pre-wrap",
     });
+  });
+
+  it("reactions/添付が無いメッセージは余分な要素を出さない", () => {
+    const reply = byId("m-reply1"); // reactions [], attachments []
+    renderUI(<MessageCard message={reply} author={sampleUserMap["u-hanako"]} />);
+    const card = screen.getByTestId("message-m-reply1");
+    expect(within(card).queryByTestId("reaction-thumbsup")).toBeNull();
+    expect(within(card).queryByText("log.txt")).toBeNull();
   });
 });
