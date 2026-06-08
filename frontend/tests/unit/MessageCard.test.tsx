@@ -1,14 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { render, screen, within } from "@testing-library/react";
-import { MantineProvider } from "@mantine/core";
-import type { ReactNode } from "react";
+import { screen, within } from "@testing-library/react";
 
 import { MessageCard } from "@/components/MessageCard";
 import { sampleMessages, sampleUserMap } from "../fixtures/jsonapi";
-
-function renderUI(ui: ReactNode) {
-  return render(<MantineProvider>{ui}</MantineProvider>);
-}
+import { renderWithMantine as renderUI } from "../helpers/render";
 
 const byId = (id: string) => sampleMessages.find((m) => m.id === id)!;
 

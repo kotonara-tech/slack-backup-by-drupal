@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { MantineProvider } from "@mantine/core";
-import type { ReactNode } from "react";
+import { screen, fireEvent } from "@testing-library/react";
 
 import { BrowsePanel } from "@/components/BrowsePanel";
 import HomePage from "@/app/page";
@@ -9,16 +7,13 @@ import { useChannels } from "@/lib/hooks/useChannels";
 import { useUsers } from "@/lib/hooks/useUsers";
 import { useChannelMessages } from "@/lib/hooks/useChannelMessages";
 import { sampleChannels, sampleUsers, sampleMessages } from "../fixtures/jsonapi";
+import { renderWithMantine as renderUI } from "../helpers/render";
 
 vi.mock("@/lib/hooks/useChannels", () => ({ useChannels: vi.fn() }));
 vi.mock("@/lib/hooks/useUsers", () => ({ useUsers: vi.fn() }));
 vi.mock("@/lib/hooks/useChannelMessages", () => ({
   useChannelMessages: vi.fn(),
 }));
-
-function renderUI(ui: ReactNode) {
-  return render(<MantineProvider>{ui}</MantineProvider>);
-}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const asResult = (data: unknown, extra: Record<string, unknown> = {}) =>

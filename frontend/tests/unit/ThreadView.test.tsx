@@ -1,16 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { MantineProvider } from "@mantine/core";
-import type { ReactNode } from "react";
+import { screen, fireEvent } from "@testing-library/react";
 
 import { ThreadView } from "@/components/ThreadView";
 import { MessageList } from "@/components/MessageList";
 import { groupIntoThreads } from "@/lib/threads";
 import { sampleMessages, sampleUserMap } from "../fixtures/jsonapi";
-
-function renderUI(ui: ReactNode) {
-  return render(<MantineProvider>{ui}</MantineProvider>);
-}
+import { renderWithMantine as renderUI } from "../helpers/render";
 
 const threads = groupIntoThreads(sampleMessages);
 const parentThread = threads.find((t) => t.root.id === "m-parent")!;

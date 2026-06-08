@@ -1,14 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { MantineProvider } from "@mantine/core";
-import type { ReactNode } from "react";
+import { screen, fireEvent } from "@testing-library/react";
 
 import { ChannelList } from "@/components/ChannelList";
 import { sampleChannels } from "../fixtures/jsonapi";
-
-function renderUI(ui: ReactNode) {
-  return render(<MantineProvider>{ui}</MantineProvider>);
-}
+import { renderWithMantine as renderUI } from "../helpers/render";
 
 describe("ChannelList", () => {
   it("チャンネル名を一覧表示する", () => {
