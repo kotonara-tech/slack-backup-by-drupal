@@ -63,4 +63,18 @@ describe("BrowsePanel", () => {
     fireEvent.click(screen.getByText("general"));
     expect(screen.getByTestId("messages-error")).toBeInTheDocument();
   });
+
+  it("主見出しはページの h1 である（見出し階層）", () => {
+    renderUI(<BrowsePanel />);
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1).toHaveAttribute("data-testid", "browse-heading");
+  });
+
+  it("モバイル用にナビ開閉の Burger を備える", () => {
+    renderUI(<BrowsePanel />);
+    const burger = screen.getByLabelText("ナビゲーションを切り替え");
+    expect(burger).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(burger);
+    expect(burger).toHaveAttribute("aria-expanded", "true");
+  });
 });
