@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { formatPostedAt } from "@/lib/format";
+import { formatPostedAt, DISPLAY_TIME_ZONE } from "@/lib/format";
 
 /**
  * small (Vitest): 投稿時刻の整形。
@@ -22,5 +22,9 @@ describe("formatPostedAt", () => {
 
   it("空文字は空文字", () => {
     expect(formatPostedAt("")).toBe("");
+  });
+
+  it("表示タイムゾーンは Asia/Tokyo", () => {
+    expect(DISPLAY_TIME_ZONE).toBe("Asia/Tokyo");
   });
 });
