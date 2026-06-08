@@ -20,4 +20,9 @@ describe("getDrupalClient", () => {
   it("呼び出すたびに同一インスタンスを返す（memoize）", () => {
     expect(getDrupalClient()).toBe(getDrupalClient());
   });
+
+  it("read コレクション取得用の getResourceCollection を備える", () => {
+    // lib/slack-api.ts はこのメソッドを deserialize:false で使う。
+    expect(typeof getDrupalClient().getResourceCollection).toBe("function");
+  });
 });
