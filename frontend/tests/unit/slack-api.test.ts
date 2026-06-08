@@ -84,4 +84,9 @@ describe("mapChannel / fetchChannels", () => {
     expect(type).toBe("taxonomy_term--slack_channels");
     expect(options.deserialize).toBe(false);
   });
+
+  it("fetchChannels は data 欠損でも空配列を返す", async () => {
+    const { client } = fakeClient({});
+    await expect(fetchChannels(client)).resolves.toEqual([]);
+  });
 });

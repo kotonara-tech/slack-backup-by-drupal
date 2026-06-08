@@ -12,6 +12,14 @@
  *  - 添付のみ `include=field_attachments` を使い、`included` の file から解決する。
  */
 import { DrupalJsonApiParams } from "drupal-jsonapi-params";
+import type { NextDrupal } from "next-drupal";
+
+import { getDrupalClient } from "@/lib/drupal";
+import type {
+  Channel,
+  JsonApiResource,
+  JsonApiResponse,
+} from "@/lib/types/slack";
 
 /** チャンネル絞り込み filter のパス（実 API 検証済み。変更はここ 1 箇所）。 */
 export const CHANNEL_FILTER_PATH =
@@ -34,4 +42,48 @@ export function buildChannelMessagesParams(tid: number): DrupalJsonApiParams {
     .addInclude(["field_attachments"])
     .addSort("field_posted_at", "DESC")
     .addPageLimit(100);
+}
+
+/* ── mappers ── */
+
+function str(value: unknown): string {
+  return value == null ? "" : String(value);
+}
+
+/** raw term → Channel。 */
+export function mapChannel(raw: JsonApiResource): Channel {
+  const a = raw.attributes;
+  return {
+    id: raw.id,
+    tid: Number(a.drupal_internal__tid ?? 0),
+    name: str(a.name),
+    slackChannelId: str(a.field_slack_channel_id),
+    channelType: str(a.field_channel_type),
+  };
+}
+
+/* ── fetchers ── */
+
+/** raw コレクションを deserialize:false で取得する共通ヘルパ。 */
+async function getCollection(
+  client: NextDrupal,
+  type: string,
+  params: DrupalJsonApiParams,
+): Promise<JsonApiResponse> {
+  return client.getResourceCollection<JsonApiResponse>(type, {
+    deserialize: false,
+    params: params.getQueryObject(),
+  });
+}
+
+/** public チャンネル一覧（匿名）。 */
+export async function fetchChannels(
+  client: NextDrupal = getDrupalClient(),
+): Promise<Channel[]> {
+  const res = await getCollection(
+    client,
+    "taxonomy_term--slack_channels",
+    buildChannelsParams(),
+  );
+  return (res.data ?? []).map(mapChannel);
 }

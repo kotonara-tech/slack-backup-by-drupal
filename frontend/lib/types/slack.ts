@@ -97,8 +97,8 @@ export interface SlackMessage {
   authorUuid: string | null;
   /** field_channel.data.id。 */
   channelUuid: string | null;
-  /** field_attachments.data[].id（file UUID）。 */
-  attachmentIds: string[];
+  /** field_attachments を included の file から解決した添付（public は通常 0 件）。 */
+  attachments: Attachment[];
 }
 
 /** スレッド（親 1 件＋時系列の返信）。`groupIntoThreads` が再構成する。 */
