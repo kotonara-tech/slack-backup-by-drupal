@@ -16,6 +16,13 @@ describe("formatPostedAt", () => {
     expect(formatPostedAt("2026-05-01T01:00:00+00:00")).toBe("2026/05/01 10:00");
   });
 
+  it("任意の offset を JST に正規化する", () => {
+    // +08:00 の 10:00 = UTC 02:00 = JST 11:00。
+    expect(formatPostedAt("2026-05-01T10:00:00+08:00")).toBe("2026/05/01 11:00");
+    // +10:00 の 10:00 = UTC 00:00 = JST 09:00。
+    expect(formatPostedAt("2026-05-01T10:00:00+10:00")).toBe("2026/05/01 09:00");
+  });
+
   it("不正な日付文字列はそのまま返す（フォールバック）", () => {
     expect(formatPostedAt("not-a-date")).toBe("not-a-date");
   });
