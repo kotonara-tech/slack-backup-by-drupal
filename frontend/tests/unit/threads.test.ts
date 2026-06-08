@@ -54,4 +54,13 @@ describe("groupIntoThreads", () => {
   it("空配列は空配列", () => {
     expect(groupIntoThreads([])).toEqual([]);
   });
+
+  it("入力順に依存しない（純関数）", () => {
+    const reversed = [...sampleMessages].reverse();
+    const a = groupIntoThreads(sampleMessages);
+    const b = groupIntoThreads(reversed);
+    expect(b.map((t) => t.root.id)).toEqual(a.map((t) => t.root.id));
+    const parentB = b.find((t) => t.root.id === "m-parent");
+    expect(parentB?.replies.map((r) => r.id)).toEqual(["m-reply1", "m-reply2"]);
+  });
 });
