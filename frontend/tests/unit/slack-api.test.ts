@@ -1,11 +1,24 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import type { NextDrupal } from "next-drupal";
 
 import {
   CHANNEL_FILTER_PATH,
   buildChannelsParams,
   buildUsersParams,
   buildChannelMessagesParams,
+  mapChannel,
+  fetchChannels,
 } from "@/lib/slack-api";
+import { channelsResponse, rawChannels } from "../fixtures/jsonapi";
+
+/** getResourceCollection だけを差し替える fake クライアント。 */
+function fakeClient(response: unknown) {
+  const getResourceCollection = vi.fn().mockResolvedValue(response);
+  return {
+    client: { getResourceCollection } as unknown as NextDrupal,
+    getResourceCollection,
+  };
+}
 
 /**
  * small (Vitest): JSON:API クエリビルダ（drupal-jsonapi-params）。
@@ -45,5 +58,30 @@ describe("query builders", () => {
     const q2 = buildChannelMessagesParams(2).getQueryString({ encode: false });
     expect(q1).toContain(`filter[${CHANNEL_FILTER_PATH}]=1`);
     expect(q2).toContain(`filter[${CHANNEL_FILTER_PATH}]=2`);
+  });
+});
+
+describe("mapChannel / fetchChannels", () => {
+  it("mapChannel は raw term をドメイン Channel へ整形する", () => {
+    const channel = mapChannel(rawChannels[0]);
+    expect(channel).toEqual({
+      id: "ch-general",
+      tid: 1,
+      name: "general",
+      slackChannelId: "C100",
+      channelType: "public_channel",
+    });
+  });
+
+  it("fetchChannels は slack_channels を deserialize:false で取得し整形する", async () => {
+    const { client, getResourceCollection } = fakeClient(channelsResponse);
+
+    const channels = await fetchChannels(client);
+
+    expect(channels).toHaveLength(2);
+    expect(channels[0].name).toBe("general");
+    const [type, options] = getResourceCollection.mock.calls[0];
+    expect(type).toBe("taxonomy_term--slack_channels");
+    expect(options.deserialize).toBe(false);
   });
 });
