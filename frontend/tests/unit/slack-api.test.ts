@@ -39,4 +39,11 @@ describe("query builders", () => {
     expect(qs).toContain("include=field_attachments");
     expect(qs).toContain("page[limit]=100");
   });
+
+  it("buildChannelMessagesParams は tid ごとに filter 値が変わる", () => {
+    const q1 = buildChannelMessagesParams(1).getQueryString({ encode: false });
+    const q2 = buildChannelMessagesParams(2).getQueryString({ encode: false });
+    expect(q1).toContain(`filter[${CHANNEL_FILTER_PATH}]=1`);
+    expect(q2).toContain(`filter[${CHANNEL_FILTER_PATH}]=2`);
+  });
 });
