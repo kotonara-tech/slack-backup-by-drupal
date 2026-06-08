@@ -11,12 +11,20 @@ import {
   mapUser,
   fetchUsers,
   buildUserMap,
+  parseReactions,
+  mapAttachment,
+  buildFileMap,
+  mapMessage,
+  fetchChannelMessages,
 } from "@/lib/slack-api";
 import {
   channelsResponse,
   rawChannels,
   usersResponse,
   rawUsers,
+  rawMessages,
+  rawFiles,
+  channelMessagesResponse,
 } from "../fixtures/jsonapi";
 
 /** getResourceCollection だけを差し替える fake クライアント。 */
@@ -132,5 +140,81 @@ describe("mapUser / fetchUsers", () => {
     expect(map["u-taro"].slackUserId).toBe("U1");
     expect(map["u-hanako"].displayName).toBe("");
     expect(map["missing"]).toBeUndefined();
+  });
+});
+
+describe("parseReactions", () => {
+  it("JSON 文字列を Reaction[] へ parse する", () => {
+    expect(parseReactions('[{"name":"thumbsup","count":3,"users":["U1"]}]')).toEqual([
+      { name: "thumbsup", count: 3 },
+    ]);
+  });
+
+  it("空配列文字列は [] になる", () => {
+    expect(parseReactions("[]")).toEqual([]);
+  });
+
+  it("壊れた JSON でも throw せず [] を返す", () => {
+    expect(parseReactions("{not json")).toEqual([]);
+  });
+
+  it("文字列でない（null 等）入力は [] を返す", () => {
+    expect(parseReactions(null)).toEqual([]);
+    expect(parseReactions(undefined)).toEqual([]);
+  });
+});
+
+describe("mapMessage / mapAttachment / fetchChannelMessages", () => {
+  const fileMap = buildFileMap(rawFiles);
+
+  it("mapAttachment / buildFileMap は file--file を Attachment へ整形する", () => {
+    expect(mapAttachment(rawFiles[0])).toEqual({
+      id: "f-log",
+      filename: "log.txt",
+      url: "/system/files/slack_archive/latest/files/log.txt",
+    });
+    expect(fileMap["f-log"].filename).toBe("log.txt");
+  });
+
+  it("mapMessage は親メッセージを attributes＋relationship.data.id から整形する", () => {
+    const parent = mapMessage(rawMessages[5], fileMap); // m-parent
+    expect(parent).toMatchObject({
+      id: "m-parent",
+      nid: 1,
+      body: "スレッドの親メッセージ",
+      slackTs: "100.0001",
+      threadTs: "100.0001",
+      postedAt: "2026-05-01T10:00:00+09:00",
+      replyCount: 2,
+      reactions: [{ name: "thumbsup", count: 3 }],
+      authorUuid: "u-taro",
+      channelUuid: "ch-general",
+      attachments: [],
+    });
+  });
+
+  it("mapMessage は bot（author 無）でも throw せず authorUuid=null", () => {
+    const bot = mapMessage(rawMessages[1], fileMap); // m-bot
+    expect(bot.authorUuid).toBeNull();
+    expect(bot.subtype).toBe("bot_message");
+    expect(bot.edited).toBe(true);
+  });
+
+  it("mapMessage は included の file から添付を解決する", () => {
+    const standalone = mapMessage(rawMessages[2], fileMap); // m-standalone
+    expect(standalone.attachments).toEqual([
+      { id: "f-log", filename: "log.txt", url: "/system/files/slack_archive/latest/files/log.txt" },
+    ]);
+  });
+
+  it("fetchChannelMessages は node を取得し添付を included から解決して整形する", async () => {
+    const { client, getResourceCollection } = fakeClient(channelMessagesResponse);
+
+    const messages = await fetchChannelMessages(1, client);
+
+    expect(messages).toHaveLength(6);
+    expect(getResourceCollection.mock.calls[0][0]).toBe("node--slack_message");
+    const standalone = messages.find((m) => m.id === "m-standalone");
+    expect(standalone?.attachments[0].filename).toBe("log.txt");
   });
 });
