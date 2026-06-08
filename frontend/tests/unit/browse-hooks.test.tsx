@@ -6,7 +6,10 @@ import { createElement } from "react";
 
 import { useChannels } from "@/lib/hooks/useChannels";
 import { useUsers } from "@/lib/hooks/useUsers";
-import { useChannelMessages } from "@/lib/hooks/useChannelMessages";
+import {
+  useChannelMessages,
+  channelMessagesQueryKey,
+} from "@/lib/hooks/useChannelMessages";
 import * as api from "@/lib/slack-api";
 import { sampleChannels, sampleUsers, sampleMessages } from "../fixtures/jsonapi";
 
@@ -67,5 +70,10 @@ describe("browse hooks", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(api.fetchChannelMessages).toHaveBeenCalledWith(1);
     expect(result.current.data).toHaveLength(sampleMessages.length);
+  });
+
+  it("channelMessagesQueryKey は tid ごとに別キーになる（キャッシュ分離）", () => {
+    expect(channelMessagesQueryKey(1)).not.toEqual(channelMessagesQueryKey(2));
+    expect(channelMessagesQueryKey(1)).toContain(1);
   });
 });
