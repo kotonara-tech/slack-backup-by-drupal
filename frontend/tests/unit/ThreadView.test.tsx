@@ -42,6 +42,12 @@ describe("ThreadView", () => {
     renderUI(<ThreadView thread={standaloneThread} userMap={sampleUserMap} />);
     expect(screen.queryByTestId("thread-toggle-m-bot")).toBeNull();
   });
+
+  it("userMap から root の author 名を解決する", () => {
+    renderUI(<ThreadView thread={parentThread} userMap={sampleUserMap} />);
+    // m-parent の authorUuid=u-taro → displayName "taro"。
+    expect(screen.getByText("taro")).toBeInTheDocument();
+  });
 });
 
 describe("MessageList", () => {
