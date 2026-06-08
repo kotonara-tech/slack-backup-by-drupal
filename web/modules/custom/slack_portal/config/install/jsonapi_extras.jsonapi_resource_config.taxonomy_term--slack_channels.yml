@@ -1,0 +1,13 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - taxonomy.vocabulary.slack_channels
+  enforced:
+    module:
+      - slack_portal
+id: taxonomy_term--slack_channels
+disabled: false
+path: taxonomy_term/slack_channels
+resourceType: taxonomy_term--slack_channels
+resourceFields: {  }

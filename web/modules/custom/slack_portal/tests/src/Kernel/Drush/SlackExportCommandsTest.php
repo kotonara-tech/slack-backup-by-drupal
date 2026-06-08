@@ -58,8 +58,6 @@ use Psr\Log\NullLogger;
 class SlackExportCommandsTest extends KernelTestBase {
 
   /**
-   * Only system is needed to set up the public:// stream wrapper.
-   *
    * {@inheritdoc}
    */
   protected static $modules = ['system'];
@@ -71,6 +69,20 @@ class SlackExportCommandsTest extends KernelTestBase {
    */
   // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar,DrupalPractice.Commenting.CommentEmptyLine.SpacingAfter
   private const TEST_TOKEN = 'xoxp-test-token'; // pragma: allowlist secret
+
+  /**
+   * {@inheritdoc}
+   *
+   * Creates the private:// directory and sets file_private_path so that
+   * CoreServiceProvider registers the private stream wrapper when the kernel
+   * boots.
+   */
+  protected function setUpFilesystem(): void {
+    parent::setUpFilesystem();
+    $private_dir = $this->siteDirectory . '/private';
+    mkdir($private_dir, 0775, TRUE);
+    $this->setSetting('file_private_path', $private_dir);
+  }
 
   /**
    * Builds the fixture MockHandler with responses in the exact call order.
@@ -220,10 +232,12 @@ class SlackExportCommandsTest extends KernelTestBase {
 
     // Settings with the test token (TEST_TOKEN is a placeholder only).
     // The encrypt deps are mocked because the Settings path is used here.
+    // Preserve all existing settings (including file_private_path) while
+    // injecting the test token so the private:// stream wrapper stays usable.
     $state = $this->createMock(StateInterface::class);
     $state->method('get')->willReturn(NULL);
     $tokenProvider = new SlackTokenProvider(
-      new Settings(['slack_user_token' => self::TEST_TOKEN]),
+      new Settings(Settings::getAll() + ['slack_user_token' => self::TEST_TOKEN]),
       $state,
       $this->createMock(EncryptServiceInterface::class),
       $this->createMock(EncryptionProfileManagerInterface::class),
@@ -300,7 +314,7 @@ class SlackExportCommandsTest extends KernelTestBase {
     $this->assertSame(0, $exitCode, 'export() must return 0 (EXIT_SUCCESS).');
 
     // --- Assertion 2: users.json ---
-    $usersUri = 'public://slack_archive/latest/users.json';
+    $usersUri = 'private://slack_archive/latest/users.json';
     $usersPath = $fileSystem->realpath($usersUri);
     $this->assertNotFalse($usersPath, 'users.json URI must resolve to a real path.');
     $this->assertFileExists((string) $usersPath, 'users.json must exist on disk.');
@@ -312,7 +326,7 @@ class SlackExportCommandsTest extends KernelTestBase {
     $this->assertSame('a@x.test', $users[0]['email'], 'email must be a@x.test.');
 
     // --- Assertion 3: channels/C1.json ---
-    $c1Uri = 'public://slack_archive/latest/channels/C1.json';
+    $c1Uri = 'private://slack_archive/latest/channels/C1.json';
     $c1Path = $fileSystem->realpath($c1Uri);
     $this->assertNotFalse($c1Path, 'channels/C1.json URI must resolve to a real path.');
     $this->assertFileExists((string) $c1Path, 'channels/C1.json must exist on disk.');
@@ -338,7 +352,7 @@ class SlackExportCommandsTest extends KernelTestBase {
     $this->assertSame('2.0', $parent['replies'][0]['slack_ts'], 'Reply must have slack_ts=2.0.');
 
     // --- Assertion 4: channels/D1.json ---
-    $d1Uri = 'public://slack_archive/latest/channels/D1.json';
+    $d1Uri = 'private://slack_archive/latest/channels/D1.json';
     $d1Path = $fileSystem->realpath($d1Uri);
     $this->assertNotFalse($d1Path, 'channels/D1.json URI must resolve to a real path.');
     $this->assertFileExists((string) $d1Path, 'channels/D1.json must exist on disk.');
@@ -348,7 +362,7 @@ class SlackExportCommandsTest extends KernelTestBase {
     $this->assertCount(1, $d1['messages'], 'D1 must have 1 top-level message.');
 
     // --- Assertion 5: manifest.json ---
-    $manifestUri = 'public://slack_archive/latest/manifest.json';
+    $manifestUri = 'private://slack_archive/latest/manifest.json';
     $manifestPath = $fileSystem->realpath($manifestUri);
     $this->assertNotFalse($manifestPath, 'manifest.json URI must resolve to a real path.');
     $this->assertFileExists((string) $manifestPath, 'manifest.json must exist on disk.');
@@ -383,7 +397,7 @@ class SlackExportCommandsTest extends KernelTestBase {
     $this->assertSame($sha1Before, $sha1After, 'C1.json must be byte-identical on second run (idempotency).');
 
     // --- Assertion 7: token must NOT appear in any archive file ---
-    $baseDir = 'public://slack_archive/latest';
+    $baseDir = 'private://slack_archive/latest';
     $baseDirReal = (string) $fileSystem->realpath($baseDir);
     $this->assertDirectoryExists($baseDirReal, 'Archive base directory must exist.');
     $iterator = new \RecursiveIteratorIterator(

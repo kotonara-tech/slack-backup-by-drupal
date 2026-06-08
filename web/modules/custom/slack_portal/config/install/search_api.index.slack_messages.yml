@@ -1,0 +1,128 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.slack_message.field_body
+    - field.field.node.slack_message.field_channel
+    - field.field.node.slack_message.field_posted_at
+    - field.field.node.slack_message.field_reaction_total
+    - field.field.node.slack_message.field_slack_user
+    - search_api.server.slack_db
+  enforced:
+    module:
+      - slack_portal
+  module:
+    - node
+    - search_api
+id: slack_messages
+name: 'Slack Messages'
+description: 'Full-text index of Slack messages (published only, M3).'
+read_only: false
+field_settings:
+  body:
+    label: Body
+    datasource_id: 'entity:node'
+    property_path: field_body
+    type: text
+  channel_name:
+    label: 'Channel name'
+    datasource_id: 'entity:node'
+    property_path: 'field_channel:entity:name'
+    type: string
+  posted_at:
+    label: 'Posted at'
+    datasource_id: 'entity:node'
+    property_path: field_posted_at
+    type: date
+  reaction_total:
+    label: 'Reaction total'
+    datasource_id: 'entity:node'
+    property_path: field_reaction_total
+    type: integer
+  slack_user_name:
+    label: 'Slack user name'
+    datasource_id: 'entity:node'
+    property_path: 'field_slack_user:entity:name'
+    type: string
+  status:
+    label: 'Publishing status'
+    datasource_id: 'entity:node'
+    property_path: status
+    type: boolean
+    indexed_locked: true
+    type_locked: true
+  title:
+    label: Title
+    datasource_id: 'entity:node'
+    property_path: title
+    type: text
+    boost: 5.0
+processor_settings:
+  add_url:
+    weights:
+      preprocess_index: -30
+  content_access:
+    weights:
+      preprocess_index: -6
+      preprocess_query: -4
+  entity_status:
+    weights:
+      preprocess_index: -10
+  html_filter:
+    weights:
+      preprocess_index: -3
+      preprocess_query: -6
+    all_fields: false
+    fields:
+      - body
+    title: true
+    alt: true
+    tags:
+      h1: 5
+      h2: 3
+      h3: 2
+      string: 2
+      b: 2
+  ignorecase:
+    weights:
+      preprocess_index: -5
+      preprocess_query: -8
+    all_fields: false
+    fields:
+      - body
+      - title
+  tokenizer:
+    weights:
+      preprocess_index: -2
+      preprocess_query: -5
+    all_fields: false
+    fields:
+      - body
+      - title
+    spaces: ''
+    overlap_cjk: 1
+    minimum_word_size: '3'
+  transliteration:
+    weights:
+      preprocess_index: -4
+      preprocess_query: -7
+    all_fields: false
+    fields:
+      - body
+      - title
+options:
+  cron_limit: 50
+  index_directly: true
+datasource_settings:
+  'entity:node':
+    bundles:
+      default: false
+      selected:
+        - slack_message
+    languages:
+      default: true
+      selected: {  }
+tracker_settings:
+  default:
+    indexing_order: fifo
+server: slack_db

@@ -25,3 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - 検証: Unit+Kernel テスト緑（PHPUnit 142 / 723 assert、small≫medium）、PHPStan L5 ＋ PHPCS clean。実 export を `drush migrate:import --group=slack_portal` で取込 → **916 node**・119 channel term・140 user term・65 file、再実行で件数不変。
 - ADR-0013（匿名閲覧可否とチャンネルプライバシー、accepted）新規。ADR-0006 を `accepted` に更新。
 - `docs/spec/` 追加: `data-model.md`・`migrate.md`。
+- **Milestone 3 — JSON:API ＋ Search API ＋ プライバシー hardening**:
+  - **JSON:API read-only**：`hook_install()` で `jsonapi.settings.read_only = TRUE`。匿名 GET `/jsonapi/node/slack_message` → 200（published のみ）、POST/PATCH/DELETE → 405。`jsonapi_extras` で `default_disabled: true`・ホワイトリスト 4 リソース（`node--slack_message`・`taxonomy_term--slack_channels`・`taxonomy_term--slack_users`・`file--file`）。その他リソース → 404。
+  - **Search API DB**：サーバ `slack_db`（`search_api_db` backend）、インデックス `slack_messages`（`entity:node` bundle `slack_message`）。`entity_status` + `content_access` プロセッサで **published のみ索引**。fulltext フィールド: title / body / channel_name / slack_user_name。date フィールド: posted_at。integer フィールド: reaction_total。`index_directly: true`（migrate 同時索引）。
+  - **jsonapi_search_api エンドポイント**：`/jsonapi/index/slack_messages` を自動公開。`filter[fulltext]`・facet フィルタ（`filter[channel]` / `filter[slack_user]` / `filter[posted_at]`）・`page[limit/offset]`・`sort` をサポート。
+  - **facets**：`jsonapi_search_api_facets` で channel / slack_user / posted_at の 3 facet を設定。レスポンス `meta.facets` に各 facet の terms（value / count / active）を含む。`empty_behavior: none`（0 件は省略）。
+  - **canonical アーカイブ private:// 移行（ADR-0014）**：アーカイブ保存先を `public://slack_archive/latest/` から `private://slack_archive/latest/` へ移行し Web 直配信を排除。PII（メッセージ本文・添付）の nginx 直配信を構造的に防止。
+  - **ファイルアクセス制御（`hook_file_download`）**：`slack_archive/` ファイルの配信は参照する `slack_message` node がリクエスト者から閲覧可能な場合のみ許可（anonymous → published/public_channel のみ）。それ以外 → 403。
+  - **taxonomy_term アクセス制御（`hook_taxonomy_term_access`）**：管理者以外は `field_channel_type != public_channel` の `slack_channels` term を閲覧不可。JSON:API コレクション・include で private / im / mpim チャンネル名を匿名から隠蔽。
+  - **CORS**：`web/sites/default/services.yml` の `cors.config` で frontend origin `http://localhost:3000` のみ許可（GET/OPTIONS）。
+  - テスト: small（Unit）≫ medium（Kernel）＋ large（Functional）合計約 168 緑。PHPStan L5 ＋ PHPCS clean。
+- ADR-0014（canonical アーカイブ private:// 移行、accepted）新規。ADR-0005 / ADR-0008 を `accepted` に更新。
+- `docs/spec/` 追加: `jsonapi-search.md`。`docs/how-to/` 追加: `private-files-setup.md`。既存 `docs/spec/` 各ファイルの `public://slack_archive/` 参照を `private://slack_archive/` に更新。

@@ -41,6 +41,15 @@ class SlackMessageContentTypeConfigTest extends KernelTestBase {
     'real_aes',
     'migrate',
     'migrate_plus',
+    'search_api',
+    'search_api_db',
+    'serialization',
+    'jsonapi',
+    'jsonapi_extras',
+    'jsonapi_resources',
+    'jsonapi_search_api',
+    'jsonapi_search_api_facets',
+    'facets',
     'slack_portal',
   ];
 
@@ -49,6 +58,15 @@ class SlackMessageContentTypeConfigTest extends KernelTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
+    // search_api_task and search_api_item are required because
+    // search_api.index.slack_messages (in slack_portal config/install) fires
+    // item tracking on postSave.
+    $this->installEntitySchema('search_api_task');
+    $this->installSchema('search_api', ['search_api_item']);
+    $this->installConfig(['search_api']);
+    $this->installEntitySchema('node');
+    $this->installEntitySchema('user');
+    $this->installEntitySchema('taxonomy_term');
     $this->installConfig(['slack_portal']);
   }
 

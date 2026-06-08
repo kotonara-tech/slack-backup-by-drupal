@@ -46,6 +46,20 @@ class SlackCanonicalFilesTest extends KernelTestBase {
 
   /**
    * {@inheritdoc}
+   *
+   * Creates the private:// directory and sets file_private_path so that
+   * CoreServiceProvider registers the private stream wrapper when the kernel
+   * boots.
+   */
+  protected function setUpFilesystem(): void {
+    parent::setUpFilesystem();
+    $private_dir = $this->siteDirectory . '/private';
+    mkdir($private_dir, 0775, TRUE);
+    $this->setSetting('file_private_path', $private_dir);
+  }
+
+  /**
+   * {@inheritdoc}
    */
   protected function setUp(): void {
     parent::setUp();
@@ -61,7 +75,7 @@ class SlackCanonicalFilesTest extends KernelTestBase {
     $this->assertSame('F_LOCAL', $rows[0]['id']);
     $this->assertSame('F_LOCAL.png', $rows[0]['filename']);
     $this->assertSame(
-      'public://slack_archive/latest/files/F_LOCAL.png',
+      'private://slack_archive/latest/files/F_LOCAL.png',
       $rows[0]['uri'],
     );
     $this->assertStringEndsWith('.png', $rows[0]['uri']);

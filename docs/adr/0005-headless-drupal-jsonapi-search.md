@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-06-01
 decision-makers: [Ryuto]
 consulted: []
@@ -29,7 +29,7 @@ informed: [dev team]
 - 大規模化時は DB backend の性能限界（将来 Solr/Typesense へ superseding ADR）。
 
 ## Confirmation
-- [ ] Functional: JSON:API コレクション 200、write 403/405、`jsonapi_search_api` で全文/ facet ヒット。
+- [x] Functional: JSON:API コレクション 200（published のみ）、write 405、`jsonapi_search_api` で全文/ facet ヒット（M3 実装・`SlackJsonApiReadOnlyTest` 他で検証済み）。
 
 ## More Information
 - JSON:API security considerations / jsonapi_search_api docs。関連: ADR-0006, ADR-0008, ADR-0011。

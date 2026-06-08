@@ -40,14 +40,43 @@ abstract class SlackMigrateKernelTestBase extends MigrateTestBase {
     'key',
     'encrypt',
     'real_aes',
+    'search_api',
+    'search_api_db',
+    'serialization',
+    'jsonapi',
+    'jsonapi_extras',
+    'jsonapi_resources',
+    'jsonapi_search_api',
+    'jsonapi_search_api_facets',
+    'facets',
     'slack_portal',
   ];
+
+  /**
+   * {@inheritdoc}
+   *
+   * Creates the private:// directory and sets file_private_path so that
+   * CoreServiceProvider registers the private stream wrapper when the kernel
+   * boots (CoreServiceProvider checks this setting during container build).
+   */
+  protected function setUpFilesystem(): void {
+    parent::setUpFilesystem();
+    $private_dir = $this->siteDirectory . '/private';
+    mkdir($private_dir, 0775, TRUE);
+    $this->setSetting('file_private_path', $private_dir);
+  }
 
   /**
    * {@inheritdoc}
    */
   protected function setUp(): void {
     parent::setUp();
+    // search_api_task entity + search_api_item table must be present before
+    // installConfig(['slack_portal']) because the index config fires item
+    // tracking (queries node table) on postSave.
+    $this->installEntitySchema('search_api_task');
+    $this->installSchema('search_api', ['search_api_item']);
+    $this->installConfig(['search_api']);
     $this->installEntitySchema('user');
     $this->installEntitySchema('node');
     $this->installEntitySchema('taxonomy_term');

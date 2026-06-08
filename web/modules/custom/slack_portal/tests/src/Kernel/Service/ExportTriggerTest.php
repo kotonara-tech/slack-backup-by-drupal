@@ -50,8 +50,6 @@ use Psr\Log\NullLogger;
 class ExportTriggerTest extends KernelTestBase {
 
   /**
-   * Only system is needed to set up the public:// stream wrapper.
-   *
    * {@inheritdoc}
    */
   protected static $modules = ['system'];
@@ -63,6 +61,20 @@ class ExportTriggerTest extends KernelTestBase {
    */
   // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar,DrupalPractice.Commenting.CommentEmptyLine.SpacingAfter
   private const TEST_TOKEN = 'xoxp-test'; // pragma: allowlist secret
+
+  /**
+   * {@inheritdoc}
+   *
+   * Creates the private:// directory and sets file_private_path so that
+   * CoreServiceProvider registers the private stream wrapper when the kernel
+   * boots.
+   */
+  protected function setUpFilesystem(): void {
+    parent::setUpFilesystem();
+    $private_dir = $this->siteDirectory . '/private';
+    mkdir($private_dir, 0775, TRUE);
+    $this->setSetting('file_private_path', $private_dir);
+  }
 
   /**
    * Builds the MockHandler queue for ExportTrigger::trigger().
@@ -154,8 +166,10 @@ class ExportTriggerTest extends KernelTestBase {
     $state = $this->createMock(StateInterface::class);
     $state->method('get')->willReturn(NULL);
 
+    // Preserve all existing settings (including file_private_path) while
+    // injecting the test token so the private:// stream wrapper stays usable.
     $tokenProvider = new SlackTokenProvider(
-      new Settings(['slack_user_token' => self::TEST_TOKEN]),
+      new Settings(Settings::getAll() + ['slack_user_token' => self::TEST_TOKEN]),
       $state,
       $this->createMock(EncryptServiceInterface::class),
       $this->createMock(EncryptionProfileManagerInterface::class),
@@ -201,7 +215,7 @@ class ExportTriggerTest extends KernelTestBase {
    *
    * Then:
    *   1. Returns ['queued'=>2, 'users'=>1].
-   *   2. public://slack_archive/latest/users.json exists with 1 user.
+   *   2. private://slack_archive/latest/users.json exists with 1 user.
    *   3. Queue 'slack_portal_fetch' has 2 items.
    *   4. ExportStateService::getStatus() returns status='running', total=2,
    *      users=1.
@@ -220,7 +234,7 @@ class ExportTriggerTest extends KernelTestBase {
     // Assert 2: users.json written.
     /** @var \Drupal\Core\File\FileSystemInterface $fileSystem */
     $fileSystem = $this->container->get('file_system');
-    $usersUri = 'public://slack_archive/latest/users.json';
+    $usersUri = 'private://slack_archive/latest/users.json';
     $usersPath = $fileSystem->realpath($usersUri);
     $this->assertNotFalse($usersPath, 'users.json URI must resolve to a real path.');
     $this->assertFileExists((string) $usersPath, 'users.json must exist on disk.');
@@ -312,7 +326,7 @@ class ExportTriggerTest extends KernelTestBase {
     // Assert: a manifest was written.
     /** @var \Drupal\Core\File\FileSystemInterface $fileSystem */
     $fileSystem = $this->container->get('file_system');
-    $manifestPath = $fileSystem->realpath('public://slack_archive/latest/manifest.json');
+    $manifestPath = $fileSystem->realpath('private://slack_archive/latest/manifest.json');
     $this->assertNotFalse($manifestPath);
     $this->assertFileExists((string) $manifestPath);
     $manifest = json_decode((string) file_get_contents((string) $manifestPath), TRUE);

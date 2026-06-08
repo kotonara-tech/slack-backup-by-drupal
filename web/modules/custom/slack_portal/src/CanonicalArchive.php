@@ -14,13 +14,16 @@ namespace Drupal\slack_portal;
  *
  * Both the writer (CanonicalJsonWriter) and the migrate source plugin
  * (SlackCanonicalMessages) resolve their base path from here so the
- * `public://slack_archive/latest` literal is defined exactly once.
+ * `private://slack_archive/latest` literal is defined exactly once.
  */
 final class CanonicalArchive {
 
   /**
    * The stable base directory URI of the canonical archive.
+   *
+   * Stored under private:// so PII / private-channel bodies and attachments
+   * are never web-served directly (nginx only exposes public://).
    */
-  public const BASE_DIR = 'public://slack_archive/latest';
+  public const BASE_DIR = 'private://slack_archive/latest';
 
 }

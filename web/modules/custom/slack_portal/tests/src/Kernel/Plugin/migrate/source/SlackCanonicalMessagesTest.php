@@ -46,6 +46,20 @@ class SlackCanonicalMessagesTest extends KernelTestBase {
 
   /**
    * {@inheritdoc}
+   *
+   * Creates the private:// directory and sets file_private_path so that
+   * CoreServiceProvider registers the private stream wrapper when the kernel
+   * boots.
+   */
+  protected function setUpFilesystem(): void {
+    parent::setUpFilesystem();
+    $private_dir = $this->siteDirectory . '/private';
+    mkdir($private_dir, 0775, TRUE);
+    $this->setSetting('file_private_path', $private_dir);
+  }
+
+  /**
+   * {@inheritdoc}
    */
   protected function setUp(): void {
     parent::setUp();

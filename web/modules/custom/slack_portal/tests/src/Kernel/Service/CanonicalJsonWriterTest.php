@@ -20,7 +20,7 @@ use Psr\Log\NullLogger;
 /**
  * Kernel tests for CanonicalJsonWriter.
  *
- * Uses the public:// stream wrapper which requires Kernel environment (DB).
+ * Uses the private:// stream wrapper which requires Kernel environment (DB).
  * Only the system module is enabled to avoid heavy M2 contrib deps. The
  * writer is constructed directly with core services.
  *
@@ -31,8 +31,6 @@ use Psr\Log\NullLogger;
 class CanonicalJsonWriterTest extends KernelTestBase {
 
   /**
-   * Only the system module is needed to set up public:// stream wrapper.
-   *
    * {@inheritdoc}
    */
   protected static $modules = ['system'];
@@ -50,6 +48,20 @@ class CanonicalJsonWriterTest extends KernelTestBase {
    * @var \Drupal\slack_portal\Service\CanonicalJsonWriter
    */
   private CanonicalJsonWriter $writer;
+
+  /**
+   * {@inheritdoc}
+   *
+   * Creates the private:// directory and sets file_private_path so that
+   * CoreServiceProvider registers the private stream wrapper when the kernel
+   * boots.
+   */
+  protected function setUpFilesystem(): void {
+    parent::setUpFilesystem();
+    $private_dir = $this->siteDirectory . '/private';
+    mkdir($private_dir, 0775, TRUE);
+    $this->setSetting('file_private_path', $private_dir);
+  }
 
   /**
    * {@inheritdoc}
@@ -89,12 +101,12 @@ class CanonicalJsonWriterTest extends KernelTestBase {
     $uri = $this->writer->writeChannel('C123', $channelMeta, $foldedMessages);
 
     // Assert: returned URI is the expected stable path.
-    $expectedUri = 'public://slack_archive/latest/channels/C123.json';
+    $expectedUri = 'private://slack_archive/latest/channels/C123.json';
     $this->assertSame($expectedUri, $uri, 'writeChannel() must return the exact stable URI.');
 
     // Assert: file exists on disk.
     $realPath = $this->fileSystem->realpath($uri);
-    $this->assertNotFalse($realPath, 'realpath() must resolve the public:// URI after write.');
+    $this->assertNotFalse($realPath, 'realpath() must resolve the private:// URI after write.');
     $this->assertFileExists((string) $realPath, 'Channel JSON file must exist on disk.');
 
     // Assert: round-trip decode equals the expected canonical structure.
@@ -145,7 +157,7 @@ class CanonicalJsonWriterTest extends KernelTestBase {
 
     // Assert: no duplicate file (e.g. C123_0.json) exists.
     $channelDir = $this->fileSystem->realpath(
-      'public://slack_archive/latest/channels',
+      'private://slack_archive/latest/channels',
     );
     $this->assertNotFalse($channelDir, 'channels directory must exist.');
     $duplicatePath = $channelDir . '/C123_0.json';
@@ -188,12 +200,12 @@ class CanonicalJsonWriterTest extends KernelTestBase {
 
     // Assert: returned URIs are the expected stable paths.
     $this->assertSame(
-      'public://slack_archive/latest/users.json',
+      'private://slack_archive/latest/users.json',
       $usersUri,
       'writeUsers() must return the stable users.json URI.',
     );
     $this->assertSame(
-      'public://slack_archive/latest/manifest.json',
+      'private://slack_archive/latest/manifest.json',
       $manifestUri,
       'writeManifest() must return the stable manifest.json URI.',
     );

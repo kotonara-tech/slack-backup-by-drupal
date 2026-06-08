@@ -1,6 +1,6 @@
 # ingest パイプライン仕様（reference）
 
-`slack_portal` モジュールの **ingest（取得）パイプライン**の確定仕様。無料 Slack ワークスペースの直近〜90 日分の会話・スレッド・添付ファイル・ユーザを Slack Web API で取得し、canonical 正規化 JSON を `public://slack_archive/latest/` に出力するまでの動作を、ソース実装に即して記述する。
+`slack_portal` モジュールの **ingest（取得）パイプライン**の確定仕様。無料 Slack ワークスペースの直近〜90 日分の会話・スレッド・添付ファイル・ユーザを Slack Web API で取得し、canonical 正規化 JSON を `private://slack_archive/latest/`（Web 非配信、M3 で public:// から移行・[ADR-0014](../adr/0014-canonical-archive-private-stream.md)）に出力するまでの動作を、ソース実装に即して記述する。
 
 > このドキュメントは「取得（fetch）→ 正規化 → 書き出し」の制御フローを対象とする。出力 JSON のスキーマ自体は別仕様で扱う。
 >
@@ -301,7 +301,7 @@ QueueWorker プラグイン定義（属性）:
 
 ## 10. 冪等性と再開可能性
 
-- **canonical JSON 書き出し**: `CanonicalJsonWriter` は決定論的エンコード（`JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES`）と上書き（rename しない）で、同一入力に対しバイト等価な出力を保証する。出力先は固定の `public://slack_archive/latest/` 配下。
+- **canonical JSON 書き出し**: `CanonicalJsonWriter` は決定論的エンコード（`JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES`）と上書き（rename しない）で、同一入力に対しバイト等価な出力を保証する。出力先は固定の `private://slack_archive/latest/` 配下（Web 非配信）。
 - **ファイル DL**: 宛先サイズ一致でスキップ（§8.2）。
 - **チャンネル再処理**: `ChannelExporter::exportChannel()` はステートレスかつ冪等。キュー worker は失敗時に例外を再 throw し、Drupal のキュー機構による再試行で安全に再処理できる。
 - **進捗の真実源**: 経路 (B) の進捗は `ExportStateService`（State キー `slack_portal.export_status`）。`idle → running → done`（または `error`）と遷移する。

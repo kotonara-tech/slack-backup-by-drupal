@@ -46,8 +46,6 @@ use Psr\Log\NullLogger;
 class ChannelExporterTest extends KernelTestBase {
 
   /**
-   * Only system is needed to set up the public:// stream wrapper.
-   *
    * {@inheritdoc}
    */
   protected static $modules = ['system'];
@@ -59,6 +57,20 @@ class ChannelExporterTest extends KernelTestBase {
    */
   // phpcs:ignore Drupal.Commenting.PostStatementComment.Found,Drupal.Commenting.InlineComment.InvalidEndChar,DrupalPractice.Commenting.CommentEmptyLine.SpacingAfter
   private const TEST_TOKEN = 'xoxp-test'; // pragma: allowlist secret
+
+  /**
+   * {@inheritdoc}
+   *
+   * Creates the private:// directory and sets file_private_path so that
+   * CoreServiceProvider registers the private stream wrapper when the kernel
+   * boots.
+   */
+  protected function setUpFilesystem(): void {
+    parent::setUpFilesystem();
+    $private_dir = $this->siteDirectory . '/private';
+    mkdir($private_dir, 0775, TRUE);
+    $this->setSetting('file_private_path', $private_dir);
+  }
 
   /**
    * Builds a Slack API client (MockHandler A) with queued Slack API responses.
@@ -162,7 +174,7 @@ class ChannelExporterTest extends KernelTestBase {
    *
    * Then:
    *   1. The channel JSON is written to
-   *      public://slack_archive/latest/channels/C1.json.
+   *      private://slack_archive/latest/channels/C1.json.
    *   2. Top-level messages contains exactly 2 entries (parent 1.0 and
    *      standalone 9.0).
    *   3. The standalone message has no 'replies' key (ThreadFolder leaves
@@ -172,7 +184,7 @@ class ChannelExporterTest extends KernelTestBase {
    *   5. The parent's files[0] has local_path 'files/F1.png' and
    *      url_private 'REDACTED'.
    *   6. The downloaded file exists at
-   *      public://slack_archive/latest/files/F1.png with contents 'PNGDATA'.
+   *      private://slack_archive/latest/files/F1.png with contents 'PNGDATA'.
    *   7. The return value is ['messages' => 2] (top-level count).
    *   8. The token string 'xoxp-test' does NOT appear anywhere in the written
    *      channel JSON.
@@ -210,7 +222,7 @@ class ChannelExporterTest extends KernelTestBase {
     $result = $exporter->exportChannel($client, self::TEST_TOKEN, $channelMeta);
 
     // --- Assertion 1: channel JSON file exists. ---
-    $channelUri = 'public://slack_archive/latest/channels/C1.json';
+    $channelUri = 'private://slack_archive/latest/channels/C1.json';
     $realPath = $fileSystem->realpath($channelUri);
     $this->assertNotFalse($realPath, 'Channel JSON URI must resolve to a real path.');
     $this->assertFileExists((string) $realPath, 'Channel JSON file must exist on disk.');
@@ -289,7 +301,7 @@ class ChannelExporterTest extends KernelTestBase {
     );
 
     // --- Assertion 6: downloaded file exists with correct contents. ---
-    $fileUri = 'public://slack_archive/latest/files/F1.png';
+    $fileUri = 'private://slack_archive/latest/files/F1.png';
     $fileRealPath = $fileSystem->realpath($fileUri);
     $this->assertNotFalse($fileRealPath, 'Downloaded file URI must resolve to a real path.');
     $this->assertFileExists((string) $fileRealPath, 'Downloaded file must exist on disk.');
@@ -386,7 +398,7 @@ class ChannelExporterTest extends KernelTestBase {
     );
 
     // Assert: written channel JSON uses lowercase extension.
-    $channelUri = 'public://slack_archive/latest/channels/C2.json';
+    $channelUri = 'private://slack_archive/latest/channels/C2.json';
     $realPath = $fileSystem->realpath($channelUri);
     $this->assertNotFalse($realPath);
     $decoded = json_decode(
@@ -403,7 +415,7 @@ class ChannelExporterTest extends KernelTestBase {
     );
 
     // Assert: file exists at the lowercase path.
-    $fileUri = 'public://slack_archive/latest/files/F2.png';
+    $fileUri = 'private://slack_archive/latest/files/F2.png';
     $this->assertNotFalse($fileSystem->realpath($fileUri));
     $this->assertFileExists(
       (string) $fileSystem->realpath($fileUri),
@@ -477,7 +489,7 @@ class ChannelExporterTest extends KernelTestBase {
     $this->assertSame(0, $result['files'], 'No external file may be counted as downloaded.');
 
     // Assert: written JSON preserves the original URL, local_path stays NULL.
-    $realPath = $fileSystem->realpath('public://slack_archive/latest/channels/C3.json');
+    $realPath = $fileSystem->realpath('private://slack_archive/latest/channels/C3.json');
     $this->assertNotFalse($realPath);
     $decoded = json_decode((string) file_get_contents((string) $realPath), TRUE);
     $this->assertIsArray($decoded);

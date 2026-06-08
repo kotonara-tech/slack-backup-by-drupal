@@ -25,7 +25,7 @@ related:
 | メッセージ | node（content type） | `slack_message` | canonical メッセージ（親＋折込 reply＋orphan、dedup 後） |
 | チャンネル | taxonomy term | vocabulary `slack_channels` | `manifest.json` の `channels[]` |
 | ユーザ | taxonomy term | vocabulary `slack_users` | `users.json` |
-| 添付ファイル | file（managed file） | — | `public://slack_archive/latest/files/<id>.<ext>`（非コピー登録） |
+| 添付ファイル | file（managed file） | — | `private://slack_archive/latest/files/<id>.<ext>`（非コピー登録、M3 で public:// から移行・ADR-0014） |
 
 > Slack ユーザは Drupal `user` ではなく **taxonomy term**（サイトアカウントではないため）。添付は Slack の `file` 型ではなく **plain entity_reference → file**（既存 public:// を参照、file usage は登録しない）。
 
@@ -104,4 +104,4 @@ canonical の message 行は privacy フラグを持たないため、source plu
 ## 6. 関連ドキュメント
 - 取込手順（source/process/ids/依存順/dedup/track_changes）: [migrate.md](./migrate.md)
 - 入力スキーマ: [canonical-json.md](./canonical-json.md)
-- 決定: [ADR-0006](../adr/0006-slack-to-drupal-data-model-and-migrate.md)（モデル）, [ADR-0013](../adr/0013-anonymous-readability-and-channel-privacy.md)（privacy/email）
+- 決定: [ADR-0006](../adr/0006-slack-to-drupal-data-model-and-migrate.md)（モデル）, [ADR-0013](../adr/0013-anonymous-readability-and-channel-privacy.md)（privacy/email）, [ADR-0014](../adr/0014-canonical-archive-private-stream.md)（private:// 移行）

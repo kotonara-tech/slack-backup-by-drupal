@@ -58,7 +58,7 @@ class SlackMessagesCompositeIdMigrateTest extends SlackMigrateKernelTestBase {
       ],
     ];
     file_put_contents(
-      'public://slack_archive/latest/channels/C_DUP001.json',
+      'private://slack_archive/latest/channels/C_DUP001.json',
       json_encode($extra),
     );
   }

@@ -14,7 +14,7 @@ source:
   data_fetcher_plugin: file
   data_parser_plugin: json
   urls:
-    - 'public://slack_archive/latest/users.json'
+    - 'private://slack_archive/latest/users.json'
   item_selector: ''
   ids:
     id:

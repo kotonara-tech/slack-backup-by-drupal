@@ -8,3 +8,57 @@
  */
 
 declare(strict_types=1);
+
+/**
+ * Implements hook_install().
+ *
+ * Locks JSON:API to read-only so the headless portal never exposes write
+ * operations (ADR-0005/0008). jsonapi.settings is owned by core, so it cannot
+ * be shipped in config/install; we set it here instead.
+ *
+ * Also enables the jsonapi_extras whitelist (default_disabled = TRUE) so only
+ * explicitly configured resource types are exposed. This reduces the attack
+ * surface (e.g. user--user is no longer reachable). The resource_config
+ * entities shipped in config/install enumerate the allowed resources.
+ * jsonapi_extras.settings is owned by jsonapi_extras module, so we override
+ * it here rather than shipping a duplicate config_object in config/install.
+ */
+function slack_portal_install(): void {
+  \Drupal::configFactory()
+    ->getEditable('jsonapi.settings')
+    ->set('read_only', TRUE)
+    ->save();
+
+  \Drupal::configFactory()
+    ->getEditable('jsonapi_extras.settings')
+    ->set('default_disabled', TRUE)
+    ->save();
+}
+
+/**
+ * Harden JSON:API for existing installs: read-only + resource whitelist (M3).
+ */
+function slack_portal_update_9001(): void {
+  \Drupal::configFactory()
+    ->getEditable('jsonapi.settings')
+    ->set('read_only', TRUE)
+    ->save();
+
+  \Drupal::configFactory()
+    ->getEditable('jsonapi_extras.settings')
+    ->set('default_disabled', TRUE)
+    ->save();
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Restores jsonapi_extras default_disabled to FALSE so the setting does not
+ * linger after the module is removed.
+ */
+function slack_portal_uninstall(): void {
+  \Drupal::configFactory()
+    ->getEditable('jsonapi_extras.settings')
+    ->set('default_disabled', FALSE)
+    ->save();
+}

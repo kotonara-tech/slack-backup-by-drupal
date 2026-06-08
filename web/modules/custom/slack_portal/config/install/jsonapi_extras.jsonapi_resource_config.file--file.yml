@@ -1,0 +1,13 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - file
+  enforced:
+    module:
+      - slack_portal
+id: file--file
+disabled: false
+path: file/file
+resourceType: file--file
+resourceFields: {  }
