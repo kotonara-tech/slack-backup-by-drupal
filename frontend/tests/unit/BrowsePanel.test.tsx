@@ -4,6 +4,7 @@ import { MantineProvider } from "@mantine/core";
 import type { ReactNode } from "react";
 
 import { BrowsePanel } from "@/components/BrowsePanel";
+import HomePage from "@/app/page";
 import { useChannels } from "@/lib/hooks/useChannels";
 import { useUsers } from "@/lib/hooks/useUsers";
 import { useChannelMessages } from "@/lib/hooks/useChannelMessages";
@@ -51,5 +52,11 @@ describe("BrowsePanel", () => {
     renderUI(<BrowsePanel />);
     fireEvent.click(screen.getByText("general"));
     expect(screen.getByTestId("browse-heading")).toHaveTextContent("general");
+  });
+
+  it("トップページ（/）は BrowsePanel を描画する", () => {
+    renderUI(<HomePage />);
+    expect(screen.getByText("general")).toBeInTheDocument();
+    expect(screen.getByTestId("browse-heading")).toBeInTheDocument();
   });
 });
