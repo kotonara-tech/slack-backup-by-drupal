@@ -217,4 +217,10 @@ describe("mapMessage / mapAttachment / fetchChannelMessages", () => {
     const standalone = messages.find((m) => m.id === "m-standalone");
     expect(standalone?.attachments[0].filename).toBe("log.txt");
   });
+
+  it("mapMessage は fileMap に無い添付（private 等）を黙って除外する", () => {
+    // included が空＝hook_file_download で遮断された添付は解決されない。
+    const standalone = mapMessage(rawMessages[2], {});
+    expect(standalone.attachments).toEqual([]);
+  });
 });
