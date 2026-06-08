@@ -19,6 +19,7 @@ import type {
   Channel,
   JsonApiResource,
   JsonApiResponse,
+  User,
 } from "@/lib/types/slack";
 
 /** チャンネル絞り込み filter のパス（実 API 検証済み。変更はここ 1 箇所）。 */
@@ -62,6 +63,19 @@ export function mapChannel(raw: JsonApiResource): Channel {
   };
 }
 
+/** raw term → User。 */
+export function mapUser(raw: JsonApiResource): User {
+  const a = raw.attributes;
+  return {
+    id: raw.id,
+    slackUserId: str(a.field_slack_user_id),
+    realName: str(a.field_real_name),
+    displayName: str(a.field_display_name),
+    isBot: Boolean(a.field_is_bot),
+    avatar: str(a.field_avatar),
+  };
+}
+
 /* ── fetchers ── */
 
 /** raw コレクションを deserialize:false で取得する共通ヘルパ。 */
@@ -86,4 +100,21 @@ export async function fetchChannels(
     buildChannelsParams(),
   );
   return (res.data ?? []).map(mapChannel);
+}
+
+/** 全ユーザ一覧（author 名引き lookup マップの元）。 */
+export async function fetchUsers(
+  client: NextDrupal = getDrupalClient(),
+): Promise<User[]> {
+  const res = await getCollection(
+    client,
+    "taxonomy_term--slack_users",
+    buildUsersParams(),
+  );
+  return (res.data ?? []).map(mapUser);
+}
+
+/** User[] を uuid→User の lookup マップへ（author 名解決に使う）。 */
+export function buildUserMap(users: User[]): Record<string, User> {
+  return Object.fromEntries(users.map((u) => [u.id, u]));
 }

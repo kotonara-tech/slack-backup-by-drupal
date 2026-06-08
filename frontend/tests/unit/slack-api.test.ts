@@ -10,6 +10,7 @@ import {
   fetchChannels,
   mapUser,
   fetchUsers,
+  buildUserMap,
 } from "@/lib/slack-api";
 import {
   channelsResponse,
@@ -124,5 +125,12 @@ describe("mapUser / fetchUsers", () => {
     expect(getResourceCollection.mock.calls[0][0]).toBe(
       "taxonomy_term--slack_users",
     );
+  });
+
+  it("buildUserMap は uuid→User の lookup マップを作る", () => {
+    const map = buildUserMap([mapUser(rawUsers[0]), mapUser(rawUsers[1])]);
+    expect(map["u-taro"].slackUserId).toBe("U1");
+    expect(map["u-hanako"].displayName).toBe("");
+    expect(map["missing"]).toBeUndefined();
   });
 });
