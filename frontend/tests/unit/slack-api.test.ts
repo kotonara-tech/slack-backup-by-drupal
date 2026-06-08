@@ -8,8 +8,15 @@ import {
   buildChannelMessagesParams,
   mapChannel,
   fetchChannels,
+  mapUser,
+  fetchUsers,
 } from "@/lib/slack-api";
-import { channelsResponse, rawChannels } from "../fixtures/jsonapi";
+import {
+  channelsResponse,
+  rawChannels,
+  usersResponse,
+  rawUsers,
+} from "../fixtures/jsonapi";
 
 /** getResourceCollection だけを差し替える fake クライアント。 */
 function fakeClient(response: unknown) {
@@ -88,5 +95,34 @@ describe("mapChannel / fetchChannels", () => {
   it("fetchChannels は data 欠損でも空配列を返す", async () => {
     const { client } = fakeClient({});
     await expect(fetchChannels(client)).resolves.toEqual([]);
+  });
+});
+
+describe("mapUser / fetchUsers", () => {
+  it("mapUser は raw term をドメイン User へ整形する", () => {
+    expect(mapUser(rawUsers[0])).toEqual({
+      id: "u-taro",
+      slackUserId: "U1",
+      realName: "Taro Yamada",
+      displayName: "taro",
+      isBot: false,
+      avatar: "https://x/taro.png",
+    });
+  });
+
+  it("mapUser は display_name が null なら空文字にする", () => {
+    expect(mapUser(rawUsers[1]).displayName).toBe("");
+  });
+
+  it("fetchUsers は slack_users を取得し全件整形する", async () => {
+    const { client, getResourceCollection } = fakeClient(usersResponse);
+
+    const users = await fetchUsers(client);
+
+    expect(users).toHaveLength(3);
+    expect(users[2].isBot).toBe(true);
+    expect(getResourceCollection.mock.calls[0][0]).toBe(
+      "taxonomy_term--slack_users",
+    );
   });
 });
