@@ -28,7 +28,10 @@ describe("ThreadView", () => {
   it("トグルで返信を展開する", () => {
     renderUI(<ThreadView thread={parentThread} userMap={sampleUserMap} />);
     fireEvent.click(screen.getByTestId("thread-toggle-m-parent"));
-    expect(screen.getByTestId("thread-replies-m-parent")).toBeInTheDocument();
+    const replies = screen.getByTestId("thread-replies-m-parent");
+    expect(replies).toBeInTheDocument();
+    // aria-controls の参照先 id が実在すること。
+    expect(replies).toHaveAttribute("id", "thread-replies-m-parent");
     expect(screen.getByText("最初の返信")).toBeInTheDocument();
     expect(screen.getByText("ブロードキャスト返信")).toBeInTheDocument();
   });

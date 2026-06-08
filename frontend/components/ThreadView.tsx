@@ -29,7 +29,12 @@ export function ThreadView({ thread, userMap }: ThreadViewProps) {
 
       {replyCount > 0 && (
         <Box pl="md">
-          <UnstyledButton onClick={toggle} data-testid={`thread-toggle-${root.id}`}>
+          <UnstyledButton
+            onClick={toggle}
+            data-testid={`thread-toggle-${root.id}`}
+            aria-expanded={opened}
+            aria-controls={`thread-replies-${root.id}`}
+          >
             <Text size="xs" c="blue">
               {opened ? "返信を隠す" : `${replyCount}件の返信を表示`}
             </Text>
@@ -37,7 +42,12 @@ export function ThreadView({ thread, userMap }: ThreadViewProps) {
 
           <Collapse in={opened}>
             {opened && (
-              <Stack gap={4} mt={4} data-testid={`thread-replies-${root.id}`}>
+              <Stack
+                gap={4}
+                mt={4}
+                id={`thread-replies-${root.id}`}
+                data-testid={`thread-replies-${root.id}`}
+              >
                 {replies.map((reply) => (
                   <MessageCard
                     key={reply.id}
