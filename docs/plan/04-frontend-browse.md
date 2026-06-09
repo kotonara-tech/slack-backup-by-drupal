@@ -3,13 +3,18 @@
 Next.js + next-drupal + React で channel/message を閲覧する。担当：`frontend-implementer`。ADR-0007。
 
 ## ToDo
-- [ ] (small/Vitest) DrupalClient：`NEXT_PUBLIC_DRUPAL_BASE_URL` から next-drupal クライアントを生成
-- [ ] (small/Vitest) query builder：`drupal-jsonapi-params` で channel/日付フィルタの querystring を生成
-- [ ] (small/Vitest) MessageCard / ChannelList：fixture の JSON:API ペイロードから描画
-- [ ] (large/Playwright) channel 一覧 → thread 閲覧の happy path（主要画面 screenshot）
+- [x] (small/Vitest) DrupalClient：`NEXT_PUBLIC_DRUPAL_BASE_URL` から next-drupal クライアントを生成（`getDrupalClient` memoized）
+- [x] (small/Vitest) query builder：`drupal-jsonapi-params` で channel フィルタの querystring を生成（`field_channel.meta.drupal_internal__target_id`）
+- [x] (small/Vitest) MessageCard / ChannelList：fixture の JSON:API ペイロードから描画（＋ThreadView/MessageList/BrowsePanel・mapper・groupIntoThreads・formatPostedAt・hooks）
+- [~] (large/Playwright) channel 一覧 → thread 閲覧の happy path（`tests/e2e/browse.spec.ts` を記述。当環境は Chromium OS lib 未導入で実行は env-gated＝M1 同様）
 
 ## 完了の定義
-- フロントで channel を選び、メッセージ/スレッドを閲覧できる。
+- フロントで channel を選び、メッセージ/スレッドを閲覧できる。 → **達成**（`/` に AppShell、public チャンネル選択→新しい順スレッド→返信展開、author/時刻/reaction/添付/編集を描画）。
+
+## 実装メモ
+- データフロー仕様：[docs/spec/frontend-browse.md](../../docs/spec/frontend-browse.md)。決定：ADR-0007（accepted）。
+- raw JSON:API（`deserialize:false`）＋ pure mapper、include 非依存の author lookup マップ、orphan 救済スレッド再構成、固定 JST 表示、本文プレーン描画（XSS なし）。
+- 多エージェントレビュー指摘 10 件対応（a11y: aria-expanded/loader 名/h1、モバイル Burger、エラー表示、テスト堅牢化）。Vitest 92 緑、tsc/eslint/build 緑。
 
 ## 次
 → 05-frontend-search.md

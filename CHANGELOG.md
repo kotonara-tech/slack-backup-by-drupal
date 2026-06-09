@@ -37,3 +37,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - テスト: small（Unit）≫ medium（Kernel）＋ large（Functional）合計約 168 緑。PHPStan L5 ＋ PHPCS clean。
 - ADR-0014（canonical アーカイブ private:// 移行、accepted）新規。ADR-0005 / ADR-0008 を `accepted` に更新。
 - `docs/spec/` 追加: `jsonapi-search.md`。`docs/how-to/` 追加: `private-files-setup.md`。既存 `docs/spec/` 各ファイルの `public://slack_archive/` 参照を `private://slack_archive/` に更新。
+- **Milestone 4 — フロントエンド閲覧（channel / message / thread ブラウズ）**:
+  - **データアクセス**（`frontend/lib`）: `getDrupalClient()`（memoized `NextDrupal`）。`next-drupal` の `getResourceCollection(type, { deserialize: false })` で **raw JSON:API（`{ data, included }`）** を取得し pure な mapper（`mapChannel`/`mapUser`/`mapMessage`/`mapAttachment`）で整形。クエリは `drupal-jsonapi-params`（`buildChannelsParams`/`buildUsersParams`/`buildChannelMessagesParams`）。チャンネル絞り込みは `filter[field_channel.meta.drupal_internal__target_id]`。
+  - **include 非依存の名前解決**: `useUsers` の全件 1 フェッチ＋`buildUserMap`（uuid→User）で author 名を解決（フォールバック `displayName→realName→slackUserId→Unknown`）。channel 名は選択中チャンネルから解決。
+  - **スレッド再構成**: `groupIntoThreads`（純関数）＝親（`thread_ts===slack_ts`）/standalone を root、返信を `thread_ts` で束ね（`thread_broadcast` 含む）、親不在の orphan も単独 root として救済（欠落ゼロ）、root 降順・返信昇順。
+  - **時刻表示**: `formatPostedAt`＝offset 付き ISO を固定 Asia/Tokyo・`YYYY/MM/DD HH:mm` に正規化（`formatToParts`、CI の TZ/ロケール非依存）。
+  - **UI**（Mantine ＋ TanStack Query）: `ChannelList`（public のみ・# 付き・active）、`MessageCard`（author/時刻/本文 pre-wrap・reactions・編集マーカー・添付。**`dangerouslySetInnerHTML` 不使用**）、`ThreadView`（返信を `aria-expanded`/`aria-controls` 付きトグルで `Collapse` 展開）、`MessageList`（未選択/読込中/エラー/0 件/一覧）、`BrowsePanel`（`AppShell`＝navbar/main/header＋モバイル `Burger`、主見出し `h1`）。`app/page.tsx` を閲覧画面に。
+  - **フック**: `useChannels`/`useUsers`/`useChannelMessages`（`enabled: tid != null` の依存クエリ・tid ごとにキー分離）。
+  - **プライバシー/セキュリティ**: 匿名で取得できる public チャンネル・published メッセージのみ消費。private 添付（`hook_file_download` 遮断）は `fileMap` 不在で黙って除外。本文・名称はすべて React 標準エスケープで描画。
+  - テスト: Vitest **92 件**（builder/mapper/`groupIntoThreads`/`formatPostedAt`/hooks/各コンポーネント。fixture は raw＋ドメインの 2 形態）。Playwright `browse.spec.ts` 記述（env-gated）。`tsc`/eslint/`next build` 緑。
+  - レビュー: 多エージェント adversarial review（21 エージェント・6 観点・各指摘を別エージェントが裏取り）→ 14 件中 10 件確定を全対応（a11y 4・エラー処理・モバイル Burger・テスト堅牢化）。
+- ADR-0007（Next.js + next-drupal + React フロントエンド）を `accepted` に更新（M4 で実装確認。版 pin 不要）。
+- `docs/spec/` 追加: `frontend-browse.md`（M4 データフロー仕様）。
