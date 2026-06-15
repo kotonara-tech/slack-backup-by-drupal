@@ -30,7 +30,7 @@ informed: [dev team]
 
 ## Confirmation
 - [x] Vitest: fixture からカード/一覧描画・query 文字列生成（M4 閲覧で達成。`next build` 緑）。
-- [~] Playwright: 閲覧 E2E は記述済（`tests/e2e/browse.spec.ts`）だが、当環境は Chromium の OS ライブラリ（`libnspr4`/`libnss3`）未導入のため実行は env-gated（M1 `export.spec.ts` と同様）。検索 E2E は M5。
+- [x] Playwright: 閲覧 E2E（`tests/e2e/browse.spec.ts`）は local＋CI(ubuntu) で緑（main run 27562781222）。WSL2 local は Chromium の OS ライブラリ（`libnspr4`/`libnss3` 等）導入後に実行可。検索 E2E は M5。
 
 ## 確定事項（M4 で確認、2026-06-09）
 - 版の整合（下記リスク）は **崩れず**：`next-drupal v2.0.1 × Next 15 × React 19 × Mantine 7` で `next build` まで緑。版 pin は不要だった。
