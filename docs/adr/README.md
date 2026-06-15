@@ -19,7 +19,7 @@
 | [0004](0004-storage-canonical-json-and-mariadb.md) | 保存形式＝canonical JSON ＋ MariaDB（別 raw DB 不採用） | accepted |
 | [0005](0005-headless-drupal-jsonapi-search.md) | ヘッドレス Drupal API（JSON:API read-only ＋ Search API DB） | accepted |
 | [0006](0006-slack-to-drupal-data-model-and-migrate.md) | Slack→Drupal データモデルと Migrate 取込 | accepted |
-| [0007](0007-nextjs-next-drupal-react-frontend.md) | Next.js + next-drupal + React フロントエンド | proposed |
+| [0007](0007-nextjs-next-drupal-react-frontend.md) | Next.js + next-drupal + React フロントエンド | accepted |
 | [0008](0008-internal-portal-auth-and-cors.md) | 社内ポータルの auth / CORS | accepted |
 | [0009](0009-secrets-and-pii-handling.md) | secrets / PII の取扱 | proposed |
 | [0010](0010-ci-pyramid-and-local-pr-gates.md) | CI（ピラミッド順）と local-ci / PR ゲート | proposed |

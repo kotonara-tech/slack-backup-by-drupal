@@ -68,6 +68,9 @@ t-wada / Kent Beck 流の **Red → Green → Refactor** を全コンポーネ�
 | `drupal-backend-implementer` | sonnet | **PHP/Drupal 専任**の 1 サイクル実装（PHPUnit→PHPStan/PHPCS） |
 | `frontend-implementer` | sonnet | **Next.js/React/TS 専任**の 1 サイクル実装（Vitest/Playwright→tsc/eslint） |
 | `test-reviewer` | opus | 両スタック横断のテスト品質・ピラミッド適合・flakiness 監査（実装変更なし） |
+| `code-reviewer` | opus | 両スタック横断のコード正しさ・API/spec 契約整合・保守性・作法の監査（編集なし） |
+| `security-reviewer` | opus | secrets/PII/XSS/JSON:API 露出/CORS/アクセス制御の監査（編集なし） |
+| `frontend-specialist` | opus | `frontend/` の React/TanStack/Mantine 作法・a11y・性能の監査（編集なし） |
 | `failure-analyst` | opus | 赤テスト/静的解析の根本原因分析（編集なし） |
 | `documentor` | opus | ADR(MADR)・README・CHANGELOG・docs/plan・各 CLAUDE.md・Diátaxis を所有（コード非干渉） |
 
@@ -120,6 +123,7 @@ make migrate               # ddev drush migrate:import --group=slack_portal
 - **禁止**：`git add -A`（ファイル個別指定）／`--no-verify`／`--amend` での失敗コミット改変／`git push --force*`／`main` への直 push（PR 経由）。
 - **push 前に `/local-ci all` 通過必須**。
 - **PR 作成時に `/review` と `/security-review` を必ず実行**し、結果を PR 本文/コメントに添付。PR 本文には ToDo 達成状況・影響 ADR・追加したテスト層を記す。
+  - 組込スキルが無い環境では、専任サブエージェントのパネルで代替実施する：`/review` ≈ `code-reviewer`＋`frontend-specialist`＋`test-reviewer`、`/security-review` ≈ `security-reviewer`。各指摘は別エージェントで敵対的に裏取りし、確定分のみ対応する。
 
 ## 13. 重要な制約・禁止事項
 
