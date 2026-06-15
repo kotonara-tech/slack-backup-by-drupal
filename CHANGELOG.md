@@ -49,3 +49,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - レビュー: 多エージェント adversarial review（21 エージェント・6 観点・各指摘を別エージェントが裏取り）→ 14 件中 10 件確定を全対応（a11y 4・エラー処理・モバイル Burger・テスト堅牢化）。
 - ADR-0007（Next.js + next-drupal + React フロントエンド）を `accepted` に更新（M4 で実装確認。版 pin 不要）。
 - `docs/spec/` 追加: `frontend-browse.md`（M4 データフロー仕様）。
+- ADR-0001 / ADR-0002 / ADR-0009 / ADR-0010 / ADR-0011 を `accepted` に更新（M1–M4 の実装＋DDEV 実機フル検証・`make ci-local` 緑で確認、2026-06-16）。
