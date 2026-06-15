@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-06-01
 decision-makers: [Ryuto]
 consulted: []
@@ -31,7 +31,7 @@ informed: [dev team]
 - ingest と portal が同一モジュール（肥大化時は分割を再検討）。
 
 ## Confirmation
-- [ ] `ddev start && ddev drush status` が成功。`docker compose config` がパース。
+- [x] `ddev start && ddev drush status` が成功（Drupal 11.3.11 / PHP 8.3.30 / MariaDB）。リポ直下 `docker-compose.yml` の `docker compose config -q` が exit 0 でパース（2026-06-16）。
 
 ## More Information
 - 関連: ADR-0005, ADR-0007。肥大化時 `slack_ingest` 分割を superseding ADR で。

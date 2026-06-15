@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-06-01
 decision-makers: [Ryuto]
 consulted: []
@@ -28,7 +28,7 @@ Slack エクスポートは PII（実名・email・DM 本文）と認証トー�
 - 開発者がトークン設定の一手間を要する。
 
 ## Confirmation
-- [ ] `tools/check_no_archive_committed.sh` が token/アーカイブを検出。`pre-commit run --all-files` が green。
+- [x] `tools/check_no_archive_committed.sh` ＋ detect-secrets が pre-commit で稼働し、`make ci-local` の pre-commit 全フック green（M1–M4）。三重防御（`.gitignore` ＋ ガードスクリプト ＋ `detect-secrets` baseline）で token/アーカイブの誤コミットを検出（2026-06-16）。
 
 ## More Information
 - `.claude/rules/{secrets-and-pii,slack-export-safety}.md`。関連: ADR-0003, ADR-0008。
