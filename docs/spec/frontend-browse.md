@@ -102,7 +102,7 @@ JSON:API の `field_posted_at` は **offset 付き ISO**（例 `2026-05-17T15:38
 ## 8. テスト
 
 - small（Vitest + Testing Library）：builder/mapper/`groupIntoThreads`/`formatPostedAt`/hooks/各コンポーネント。JSON:API 応答は `tests/fixtures/jsonapi.ts`（raw＋ドメインの 2 形態）でモック。
-- large（Playwright、env-gated）：`tests/e2e/browse.spec.ts`（`page.route` で全モック→チャンネル選択→スレッド閲覧→返信展開→screenshot）。当環境は Chromium の OS ライブラリ未導入のため未実行（`make ci-local` の frontend ゲート対象外）。
+- large（Playwright）：`tests/e2e/browse.spec.ts`（`page.route` で全モック→チャンネル選択→スレッド閲覧→返信展開→screenshot）。local＋CI(ubuntu) で green 確認済（main run 27562781222）。e2e は `make ci-local` には含まれず `/local-ci e2e` で実行する。
 
 ---
 

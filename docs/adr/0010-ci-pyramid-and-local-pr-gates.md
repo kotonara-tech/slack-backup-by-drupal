@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-06-01
 decision-makers: [Ryuto]
 consulted: []
@@ -32,7 +32,7 @@ CI は全テストを実行したいが、重い E2E（Playwright / Functional�
 - paths-filter の設定漏れに注意（フィルタの網羅性を維持）。
 
 ## Confirmation
-- [ ] `make ci-local` が green。CI で E2E が該当変更時のみ発火。
+- [x] `make ci-local` が全ステージ green（pre-commit → PHPStan → PHPCS → PHPUnit Unit+Kernel 156/1138 assert → frontend tsc/eslint/vitest 92/build、2026-06-16）。CI(main) は run 27562781222 success、E2E（Playwright/Functional）は paths-filter で該当変更時のみ発火。
 
 ## More Information
 - `.claude/skills/local-ci/SKILL.md`、`.claude/rules/commit-discipline.md`。関連: ADR-0001, ADR-0011。

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-06-01
 decision-makers: [Ryuto]
 consulted: []
@@ -33,7 +33,7 @@ Drupal で構築する API のテスト/静的解析の道具立てを定める�
 - Functional は重い（CI では条件発火: ADR-0010）。
 
 ## Confirmation
-- [ ] `ddev exec vendor/bin/phpunit -c web/phpunit.xml --list-suites` が Unit/Kernel/Functional を認識。phpstan/phpcs が骨格で green。
+- [x] `ddev exec vendor/bin/phpunit -c web/phpunit.xml --list-suites` が Unit 80 / Kernel 76 / Functional 15 を認識。`make phpstan`（level5・71 ファイル）／`make phpcs`（138 ファイル）ともに 0 error（2026-06-16）。
 
 ## More Information
 - Drupal「Types of tests」/ PHPUnit in Drupal / mglaman/phpstan-drupal / drupal/coder / weitzman/drupal-test-traits。関連: ADR-0001, ADR-0005, ADR-0010。

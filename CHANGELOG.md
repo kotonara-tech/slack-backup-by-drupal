@@ -45,7 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - **UI**（Mantine ＋ TanStack Query）: `ChannelList`（public のみ・# 付き・active）、`MessageCard`（author/時刻/本文 pre-wrap・reactions・編集マーカー・添付。**`dangerouslySetInnerHTML` 不使用**）、`ThreadView`（返信を `aria-expanded`/`aria-controls` 付きトグルで `Collapse` 展開）、`MessageList`（未選択/読込中/エラー/0 件/一覧）、`BrowsePanel`（`AppShell`＝navbar/main/header＋モバイル `Burger`、主見出し `h1`）。`app/page.tsx` を閲覧画面に。
   - **フック**: `useChannels`/`useUsers`/`useChannelMessages`（`enabled: tid != null` の依存クエリ・tid ごとにキー分離）。
   - **プライバシー/セキュリティ**: 匿名で取得できる public チャンネル・published メッセージのみ消費。private 添付（`hook_file_download` 遮断）は `fileMap` 不在で黙って除外。本文・名称はすべて React 標準エスケープで描画。
-  - テスト: Vitest **92 件**（builder/mapper/`groupIntoThreads`/`formatPostedAt`/hooks/各コンポーネント。fixture は raw＋ドメインの 2 形態）。Playwright `browse.spec.ts` 記述（env-gated）。`tsc`/eslint/`next build` 緑。
+  - テスト: Vitest **92 件**（builder/mapper/`groupIntoThreads`/`formatPostedAt`/hooks/各コンポーネント。fixture は raw＋ドメインの 2 形態）。Playwright `browse.spec.ts` は local＋CI(ubuntu) で緑（main run 27562781222）。`tsc`/eslint/`next build` 緑。
   - レビュー: 多エージェント adversarial review（21 エージェント・6 観点・各指摘を別エージェントが裏取り）→ 14 件中 10 件確定を全対応（a11y 4・エラー処理・モバイル Burger・テスト堅牢化）。
 - ADR-0007（Next.js + next-drupal + React フロントエンド）を `accepted` に更新（M4 で実装確認。版 pin 不要）。
 - `docs/spec/` 追加: `frontend-browse.md`（M4 データフロー仕様）。
+- ADR-0001 / ADR-0002 / ADR-0009 / ADR-0010 / ADR-0011 を `accepted` に更新（M1–M4 の実装＋DDEV 実機フル検証・`make ci-local` 緑で確認、2026-06-16）。

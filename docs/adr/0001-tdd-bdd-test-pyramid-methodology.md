@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-06-01
 decision-makers: [Ryuto]
 consulted: []
@@ -31,7 +31,7 @@ informed: [dev team]
 - 各機能でテスト先行の手数が増える（が AI で低コスト化）。
 
 ## Confirmation
-- [ ] `.claude/rules/{tdd-enforcement,test-pyramid}.md` と `tools/check_tdd.sh`、CI のピラミッド順で担保。
+- [x] `.claude/rules/{tdd-enforcement,test-pyramid}.md` と `tools/check_tdd.sh`（存在・実行可）、CI のピラミッド順で担保。M1–M4 を Red→Green→Refactor で実装し、`phpunit --list-suites`＝Unit 80 / Kernel 76 / Functional 15（small≫medium>large）、`make ci-local` 緑で確認（2026-06-16）。
 
 ## More Information
 - Google「Just Say No to More End-to-End Tests」/ SWE at Google Ch.11
