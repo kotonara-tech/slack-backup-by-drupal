@@ -7,9 +7,10 @@ import { test, expect } from "@playwright/test";
  * raw 応答（`{ data, included }`）を返し、チャンネル選択→スレッド閲覧→展開を辿る。
  * 実スタック検証は PLAYWRIGHT_BASE_URL を実サイトへ向け、route モックを外す。
  *
- * 注: 当環境では Chromium の OS ライブラリ（libnspr4/libnss3 等）が未導入のため
- * 実行できない（`make ci-local` の frontend ゲートにも含まれない）。M1 の
- * export.spec.ts と同様、「書く＋レビュー」で done 扱いとする。
+ * 実行: ローカルは Chromium の OS ライブラリ（libnspr4/libnss3 等）導入後に
+ * `npx playwright test`（または `/local-ci e2e`）で実行する。CI(ubuntu) では
+ * `frontend-e2e` ジョブが Playwright を実行する（`make ci-local` の対象外）。
+ * local＋CI ともに緑（main run 27562781222）。
  */
 const JSONAPI = "application/vnd.api+json";
 
