@@ -9,7 +9,7 @@
 ```
 Drush コマンド (slack_portal / PHP)
   jolicode/slack-php-api + Queue/Batch + guzzle_retry_middleware
-   ├─► canonical 正規化 JSON アーカイブ（public://slack_archive/、恒久バックアップ）
+   ├─► canonical 正規化 JSON アーカイブ（private://slack_archive/、恒久バックアップ）
    └─► migrate_plus（JSON source）→ Drupal エンティティ（MariaDB）
                                       JSON:API(read-only) + Search API(DB) + jsonapi_search_api + facets
                                       ▼
@@ -49,7 +49,7 @@ make setup        # DDEV 導入(無ければ) → ddev start → composer instal
 # Slack トークン（xoxp- user token）を設定（コミット禁止）
 cp .env.example .env && $EDITOR .env        # SLACK_USER_TOKEN を記入（実運用は Drupal Key 推奨）
 
-make export          # ★ 90日分を取得し canonical JSON を public://slack_archive/ へ
+make export          # ★ 90日分を取得し canonical JSON を private://slack_archive/ へ
 make migrate         # canonical JSON → Drupal エンティティ
 # ポータル: https://slack-backup-by-drupal.ddev.site （JSON:API） / frontend: http://localhost:3000
 ```
