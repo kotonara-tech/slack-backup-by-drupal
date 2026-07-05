@@ -5,7 +5,7 @@ Slack エクスポートは **PII（実名・email・DM 本文・ユーザ ID）
 ## 絶対禁止（コミット / ログ出力）
 - **Slack token（`xoxp-` / `xoxb-`）** を、コード・設定・コミット・ログ・スクリーンショットに出さない。
 - **canonical アーカイブ**（`private://slack_archive/`、ADR-0014）と DB ダンプをコミットしない。
-  - `.gitignore` で除外済み（`**/slack_archive/`、`/web/sites/*/files`）。
+  - `.gitignore` で除外済み（`**/slack_archive/` が格納先に依らず対象。private ファイルディレクトリも gitignore 済み）。
   - `tools/check_no_archive_committed.sh`（pre-commit）と `detect-secrets`（`.secrets.baseline`）で二重に検出。
 
 ## トークンの保管
