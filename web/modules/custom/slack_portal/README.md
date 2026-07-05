@@ -4,7 +4,7 @@ Slack 取得から Drupal 公開までを担う単一カスタムモジュール
 
 ## 役割と配置
 - **ingest（取得）**：`src/Service/`（SlackClientFactory・SlackFetcher・CanonicalJsonWriter）、`src/Drush/Commands/`（`slack:export`）、`src/Plugin/QueueWorker/`（再開可能フェッチ）。`jolicode/slack-php-api` ＋ `caseyamcl/guzzle_retry_middleware` ＋ Queue/Batch。
-- **portal（公開）**：`migrations/`（migrate_plus YAML）、`config/install/`（content type `slack_message`・taxonomy `slack_channels`・Search API index・facets・JSON:API 設定）、`src/Plugin/migrate/{source,process}/`。
+- **portal（公開）**：`config/install/`（content type `slack_message`・taxonomy `slack_channels`/`slack_users`・Search API index・facets・JSON:API 設定・`migrate_plus.migration.*`）、`src/Plugin/migrate/{source,process}/`。
 
 ## テスト（PHPUnit のみ。pytest/ruff/mypy は使わない）
 - `tests/src/Unit`（small・`UnitTestCase`、Slack は Guzzle `MockHandler`）

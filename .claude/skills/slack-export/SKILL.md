@@ -1,6 +1,6 @@
 ---
 name: slack-export
-description: 実 Slack ワークスペースの直近90日を取得し canonical 正規化 JSON を public://slack_archive/ に出力、続けて Drupal へ取込む。Milestone 1 の実装が緑になってから有効。トークンは echo しない。
+description: 実 Slack ワークスペースの直近90日を取得し canonical 正規化 JSON を private://slack_archive/ に出力、続けて Drupal へ取込む。Milestone 1 の実装が緑になってから有効。トークンは echo しない。
 ---
 
 # /slack-export
@@ -15,7 +15,7 @@ description: 実 Slack ワークスペースの直近90日を取得し canonical
 1. 取得：`ddev drush slack:export --since=90d`
    - 全チャンネル（public/private/DM/MPDM）＋ threads ＋ files ＋ users ＋ reactions を取得。
    - cursor pagination ＋ 429 backoff ＋ Queue/Batch で冪等・再開可能。
-   - 出力：canonical 正規化 JSON を `public://slack_archive/<timestamp>/`（恒久バックアップの正典）。
+   - 出力：canonical 正規化 JSON を `private://slack_archive/latest/`（恒久バックアップの正典）。
 2. 取込：`ddev drush migrate:import --group=slack_portal`
    - canonical JSON → Drupal エンティティ（MariaDB）。再実行しても重複しない。
 3. 確認：`ddev drush migrate:status --group=slack_portal`、JSON:API（`/jsonapi/...`）で件数確認。
