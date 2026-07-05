@@ -9,7 +9,7 @@ Coding Agent（Claude Code）が**自走**で開発するための最上位規�
 | 層 | スタック |
 |----|----|
 | 取得（ingest） | **PHP / Drush コマンド** ＋ Drupal **Queue/Batch API** ＋ `jolicode/slack-php-api` ＋ `caseyamcl/guzzle_retry_middleware` |
-| バックアップ正典 | **canonical 正規化 JSON**（`public://slack_archive/`、gitignore） |
+| バックアップ正典 | **canonical 正規化 JSON**（`private://slack_archive/`、gitignore） |
 | 保存 DB | **Drupal エンティティ（MariaDB）**、`migrate_plus`(JSON source) で冪等取込 |
 | API | **Drupal 11 / PHP 8.3** — JSON:API(read-only) ＋ Search API(DB backend) ＋ `jsonapi_search_api` ＋ facets ＋ `jsonapi_extras` ＋ CORS |
 | フロント | **Next.js 15 (App Router) ＋ next-drupal ＋ React ＋ TypeScript ＋ Mantine ＋ TanStack Query ＋ drupal-jsonapi-params** |
@@ -88,13 +88,14 @@ t-wada / Kent Beck 流の **Red → Green → Refactor** を全コンポーネ�
 - `commit-discipline.md` — コミット/PR 規律
 - `secrets-and-pii.md` — token/PII/アーカイブの取扱
 - `slack-export-safety.md` — Slack 取得の安全・90日緊急性・レート制限
+- `drupal-runtime-and-recovery.md` — 検証済み環境・DDEV/Drush 運用・キャッシュ規律・復旧手順・完了前ランタイム検証・Drupal 作法（contrib 優先）
 
 ## 10. ディレクトリ規約
 
-- 取得＋ポータルは単一モジュール `web/modules/custom/slack_portal/`（ingest は `src/Service`・`src/Drush`・`src/Plugin/QueueWorker`、portal は `config/install`・`migrations`・`src/Plugin/migrate`）。
+- 取得＋ポータルは単一モジュール `web/modules/custom/slack_portal/`（ingest は `src/Service`・`src/Drush`・`src/Plugin/QueueWorker`、portal は `config/install`（content type・taxonomy・Search API・facets・JSON:API 設定と `migrate_plus.migration.*`）・`src/Plugin/migrate`）。`migrations/` は空の予約。
 - テスト：`web/modules/custom/slack_portal/tests/src/{Unit,Kernel,Functional}`（任意 `ExistingSite`）。
 - フロント：`frontend/`（`app/`・`lib/`・`tests/{unit,e2e}`）。
-- ドキュメント：`docs/adr`・`docs/plan`・`docs/{tutorials,how-to,reference,explanation}`（Diátaxis）。
+- ドキュメント：`docs/adr`・`docs/plan`・`docs/spec`（確定した実装仕様: canonical-json / ingest-pipeline / migrate / jsonapi-search / portal-api / data-model / credentials / frontend-browse）・`docs/how-to`（実体あり）＋ `docs/{tutorials,reference,explanation}`（Diátaxis 区分・現状プレースホルダ）。
 
 ## 11. コマンド早見表（**すべて DDEV 前提**）
 
@@ -104,13 +105,20 @@ make test                  # PHPUnit(Unit+Kernel) + Vitest
 make phpunit               # ddev exec vendor/bin/phpunit -c web/phpunit.xml --testsuite Unit,Kernel
 make phpstan               # ddev exec vendor/bin/phpstan analyze web/modules/custom/slack_portal -l 5
 make phpcs / make phpcbf   # コーディング規約チェック / 自動修正
-make test-frontend         # cd frontend && npx vitest run
+make test-frontend         # cd frontend && npm test
 make ci-local              # CI 相当（= /local-ci all）
-make export                # ★ ddev drush slack:export --since=90d （実 Slack 取得）
+make export                # ★ ddev drush slack:export --since=${SLACK_EXPORT_SINCE_DAYS:-90} （実 Slack 取得; 既定 90 日）
 make migrate               # ddev drush migrate:import --group=slack_portal
+# --- 運用（runtime ops）: 詳細は .claude/rules/drupal-runtime-and-recovery.md ---
+ddev drush status          # 稼働確認
+ddev drush cr              # キャッシュ再構築（構造変更後は必須）
+ddev drush watchdog:show --count=20   # 直近ログ
+ddev launch                # サイトを開く（https://slack-backup-by-drupal.ddev.site）
 ```
 
 `/local-ci all` は push 前に**必ず**通すこと（§12）。
+
+> 壊れたときの復旧・完了前のランタイム検証は `.claude/rules/drupal-runtime-and-recovery.md`。
 
 ## 12. コミット / PR 規約
 
@@ -128,6 +136,6 @@ make migrate               # ddev drush migrate:import --group=slack_portal
 ## 13. 重要な制約・禁止事項
 
 - 編集不可：`.env`・`**/.env.*`・`~/.ssh/*`・`~/.claude/settings.json`（global）・`.secrets.baseline`（人間レビュー）。
-- **canonical アーカイブ（`public://slack_archive/`）と Slack token（`xoxp-`）を絶対に commit / ログ出力しない。** token は Drupal Key モジュール or `settings.local.php`/env で管理（`.claude/rules/secrets-and-pii.md`）。
+- **canonical アーカイブ（`private://slack_archive/`）と Slack token（`xoxp-`）を絶対に commit / ログ出力しない。** token は Drupal Key モジュール or `settings.local.php`/env で管理（`.claude/rules/secrets-and-pii.md`）。
 - **90日 erosion**：無料 Slack の可視履歴は毎日消える。実エクスポート（`docs/plan/01-real-slack-export.md`）が最優先。
 - 破壊的操作（force-push / hard reset / broad rm / `drush sql-drop` / `ddev delete`）は不可（`.claude/settings.json` で deny）。
