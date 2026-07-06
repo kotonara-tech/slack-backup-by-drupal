@@ -78,8 +78,8 @@ t-wada / Kent Beck 流の **Red → Green → Refactor** を全コンポーネ�
 
 - 形式：**MADR**（軽量・Markdown）。場所 `docs/adr/NNNN-kebab-case.md`（4 桁ゼロ詰め）。**< 200 行**。
 - Status：`proposed` → `accepted` → `superseded`/`deprecated`。
-- **承認済み ADR は書き換えない。** 変更時は新 ADR を起こし `Supersedes: ADR-NNNN`、旧を `superseded` にして `Superseded by: ADR-XXXX` を追記。
-- **部分 supersession**：決定の一部のみ変更する場合は新旧 ADR の frontmatter に `supersedes:`／`superseded-by:`（対象範囲明記）を追記し、残余決定が有効な限り旧 ADR は `accepted` のまま。旧本文は書き換えず H1 直下の注記で示す（詳細 `docs/adr/README.md`）。
+- **承認済み ADR は書き換えない。** 変更時は新 ADR を起こし frontmatter に `supersedes: ADR-NNNN`、旧を status `superseded` にして frontmatter に `superseded-by: ADR-XXXX` を追記。
+- **部分 supersession**：決定の一部のみ変更する場合は新旧 ADR の frontmatter に `supersedes:`／`superseded-by:`（対象範囲を明記）を追記し、残余決定が有効な限り旧 ADR は `accepted` のまま。旧本文は書き換えず H1 直下の注記で示す（詳細 `docs/adr/README.md`）。
 - 起草/改訂は `documentor`（Opus）が担当。テンプレは `docs/adr/template.md`。
 
 ## 9. `.claude/rules/`（正典）
