@@ -4,6 +4,8 @@ date: YYYY-MM-DD
 decision-makers: []
 consulted: []
 informed: []
+# supersedes: "ADR-NNNN（全体、または対象範囲を明記）" # 任意・supersede 時のみ
+# superseded-by: "ADR-XXXX（全体、または対象範囲を明記）" # 任意・supersede された時のみ
 ---
 
 # ADR-NNNN: <タイトル>
@@ -34,5 +36,5 @@ informed: []
 - [ ]
 
 ## More Information
-<!-- 関連 ADR、Supersedes/Superseded by、出典 URL -->
+<!-- 関連 ADR、出典 URL（supersedes/superseded-by は frontmatter に記載） -->
 -

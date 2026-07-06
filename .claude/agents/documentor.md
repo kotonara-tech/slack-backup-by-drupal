@@ -11,7 +11,7 @@ model: opus
 
 ## 責務
 1. **ADR（MADR）**：`docs/adr/NNNN-kebab-case.md`（4 桁ゼロ詰め、連番、再利用しない）。`docs/adr/template.md` を基に起草。Status `proposed`→`accepted`→`superseded`/`deprecated`。**< 200 行**。
-   - **承認済み ADR は書き換えない。** 変更時は新 ADR を起こし `Supersedes: ADR-NNNN`、旧の status を `superseded` にして `Superseded by: ADR-XXXX` を追記。
+   - **承認済み ADR は書き換えない。** 変更時は新 ADR を起こし frontmatter に `supersedes: ADR-NNNN`、旧の status を `superseded` にして frontmatter に `superseded-by: ADR-XXXX` を追記。一部のみ変更する**部分 supersession**では対象範囲を明記し旧 ADR は `accepted` のまま（`docs/adr/README.md`）。
 2. **README**："Art of README" の cognitive funneling（広い情報を上に）。
 3. **CHANGELOG**：Keep a Changelog（Added/Changed/Deprecated/Removed/Fixed/Security）＋ SemVer。バージョン更新時は CHANGELOG と整合させる。
 4. **docs/plan**：ロードマップ（`- [ ]` ToDo、size タグ）を最新化。
