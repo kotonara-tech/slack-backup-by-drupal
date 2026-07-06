@@ -4,9 +4,14 @@ date: 2026-06-01
 decision-makers: [Ryuto]
 consulted: []
 informed: [dev team]
+superseded-by: "ADR-0014（保存先のみ。本 ADR の保存形式・MariaDB 決定は引き続き有効）"
 ---
 
 # ADR-0004: 保存形式＝canonical JSON ＋ MariaDB（別 raw DB 不採用）
+
+> **注記（部分 supersession）**：本 ADR の保存先 `public://slack_archive/latest/` は
+> [ADR-0014](0014-canonical-archive-private-stream.md) により `private://slack_archive/latest/` へ変更済み。
+> 保存形式（canonical JSON）・MariaDB・冪等取込の決定は引き続き正典。以下の本文は当時の記録として不変。
 
 ## Context and Problem Statement
 取得データの「恒久バックアップ」と「検索・閲覧用ストア」をどう持つか。当初案は別 raw Postgres だったが、PHP 単一化（ADR-0003）に伴い構成を簡素化したい。

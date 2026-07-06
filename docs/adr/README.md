@@ -7,6 +7,7 @@
 - 1 ADR は **< 200 行**。1 決定 = 1 ADR。
 - Status：`proposed` → `accepted` → `superseded` / `deprecated`。
 - **承認済み ADR は書き換えない。** 変更時は新 ADR を起こし `Supersedes: ADR-NNNN`、旧を `superseded` にして `Superseded by: ADR-XXXX` を追記。
+- **部分 supersession**（決定の一部のみ変更）：新 ADR の frontmatter に `supersedes:（対象範囲を明記）`、旧 ADR に `superseded-by:（対象範囲を明記）` を追記。残余決定が有効な限り旧 ADR の status は `accepted` のまま。旧本文は書き換えず、H1 直下の注記 blockquote で変更点を示す（例：ADR-0004 ⇄ ADR-0014）。
 - ADR には出典 URL を明記する。
 
 ## 索引

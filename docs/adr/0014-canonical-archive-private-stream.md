@@ -4,6 +4,7 @@ date: 2026-06-08
 decision-makers: [Ryuto]
 consulted: []
 informed: [dev team]
+supersedes: "ADR-0004（保存先 public:// の決定のみ。canonical JSON / MariaDB の決定は不変）"
 ---
 
 # ADR-0014: canonical アーカイブを private:// に移行し Web 直配信を排除
