@@ -11,7 +11,6 @@ dependencies:
   - 'search_api:search_api_db'
   - 'jsonapi_search_api:jsonapi_search_api'
   - 'jsonapi_search_api:jsonapi_search_api_facets'
-  - 'jsonapi_resources:jsonapi_resources'
   - 'jsonapi_extras:jsonapi_extras'
   - 'facets:facets'
   - 'migrate_plus:migrate_plus'
