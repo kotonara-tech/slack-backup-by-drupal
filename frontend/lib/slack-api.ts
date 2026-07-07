@@ -30,6 +30,9 @@ import type {
 export const CHANNEL_FILTER_PATH =
   "field_channel.meta.drupal_internal__target_id";
 
+/** チャンネルメッセージの 1 ページあたり件数（追加読み込みの offset 計算にも使う）。 */
+export const CHANNEL_MESSAGES_PAGE_LIMIT = 100;
+
 /** チャンネル一覧（匿名→public のみ）。name 昇順。 */
 export function buildChannelsParams(): DrupalJsonApiParams {
   return new DrupalJsonApiParams().addSort("name").addPageLimit(200);
@@ -40,13 +43,17 @@ export function buildUsersParams(): DrupalJsonApiParams {
   return new DrupalJsonApiParams().addPageLimit(200);
 }
 
-/** 指定チャンネル（tid）のメッセージ。新しい順・添付 include・最大 100 件。 */
-export function buildChannelMessagesParams(tid: number): DrupalJsonApiParams {
+/** 指定チャンネル（tid）のメッセージ。新しい順・添付 include・最大 100 件・offset 指定可。 */
+export function buildChannelMessagesParams(
+  tid: number,
+  offset = 0,
+): DrupalJsonApiParams {
   return new DrupalJsonApiParams()
     .addFilter(CHANNEL_FILTER_PATH, String(tid))
     .addInclude(["field_attachments"])
     .addSort("field_posted_at", "DESC")
-    .addPageLimit(100);
+    .addPageLimit(CHANNEL_MESSAGES_PAGE_LIMIT)
+    .addPageOffset(offset);
 }
 
 /* ── mappers ── */
@@ -207,16 +214,28 @@ export function buildUserMap(users: User[]): Record<string, User> {
   return Object.fromEntries(users.map((u) => [u.id, u]));
 }
 
-/** 指定チャンネル（tid）のメッセージ。添付は included から解決する。 */
+/** 1 ページ分のチャンネルメッセージ（追加読み込み用に残ページの有無を持つ）。 */
+export interface ChannelMessagesPage {
+  messages: SlackMessage[];
+  /** 残ページの有無。`links.next` があれば true、無ければ件数が limit と同じかで判定。 */
+  hasNext: boolean;
+}
+
+/** 指定チャンネル（tid）のメッセージ。添付は included から解決する。offset で追加読み込み。 */
 export async function fetchChannelMessages(
   tid: number,
+  offset = 0,
   client: NextDrupal = getDrupalClient(),
-): Promise<SlackMessage[]> {
+): Promise<ChannelMessagesPage> {
   const res = await getCollection(
     client,
     "node--slack_message",
-    buildChannelMessagesParams(tid),
+    buildChannelMessagesParams(tid, offset),
   );
   const fileMap = buildFileMap(res.included ?? []);
-  return (res.data ?? []).map((m) => mapMessage(m, fileMap));
+  const messages = (res.data ?? []).map((m) => mapMessage(m, fileMap));
+  // Drupal core JSON:API の links.next は信頼できる契約のため、それのみで判定する
+  // （件数が limit と同数という length heuristic は最終ページで偽陽性になるため使わない）。
+  const hasNext = res.links?.next != null;
+  return { messages, hasNext };
 }

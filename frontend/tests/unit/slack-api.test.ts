@@ -75,6 +75,19 @@ describe("query builders", () => {
     expect(q1).toContain(`filter[${CHANNEL_FILTER_PATH}]=1`);
     expect(q2).toContain(`filter[${CHANNEL_FILTER_PATH}]=2`);
   });
+
+  it("buildChannelMessagesParams は offset 省略時は 0 ページ目を要求する", () => {
+    const qs = buildChannelMessagesParams(7).getQueryString({ encode: false });
+    expect(qs).toContain("page[offset]=0");
+  });
+
+  it("buildChannelMessagesParams は offset 指定でその分だけ送りする", () => {
+    const qs = buildChannelMessagesParams(7, 100).getQueryString({
+      encode: false,
+    });
+    expect(qs).toContain("page[offset]=100");
+    expect(qs).toContain("page[limit]=100");
+  });
 });
 
 describe("mapChannel / fetchChannels", () => {
@@ -210,11 +223,11 @@ describe("mapMessage / mapAttachment / fetchChannelMessages", () => {
   it("fetchChannelMessages は node を取得し添付を included から解決して整形する", async () => {
     const { client, getResourceCollection } = fakeClient(channelMessagesResponse);
 
-    const messages = await fetchChannelMessages(1, client);
+    const page = await fetchChannelMessages(1, 0, client);
 
-    expect(messages).toHaveLength(6);
+    expect(page.messages).toHaveLength(6);
     expect(getResourceCollection.mock.calls[0][0]).toBe("node--slack_message");
-    const standalone = messages.find((m) => m.id === "m-standalone");
+    const standalone = page.messages.find((m) => m.id === "m-standalone");
     expect(standalone?.attachments[0].filename).toBe("log.txt");
   });
 
@@ -222,5 +235,57 @@ describe("mapMessage / mapAttachment / fetchChannelMessages", () => {
     // included が空＝hook_file_download で遮断された添付は解決されない。
     const standalone = mapMessage(rawMessages[2], {});
     expect(standalone.attachments).toEqual([]);
+  });
+});
+
+/**
+ * small (Vitest): 追加読み込み（ページング）の hasNext 判定と offset 伝播。
+ * 契約は docs/spec/jsonapi-search.md §3.3（`page[offset]`・`links.next`）。
+ */
+describe("fetchChannelMessages のページング", () => {
+  it("offset を省略すると 0 ページ目を取得する", async () => {
+    const { client, getResourceCollection } = fakeClient(channelMessagesResponse);
+
+    await fetchChannelMessages(1, undefined, client);
+
+    const [, options] = getResourceCollection.mock.calls[0];
+    expect(options.params.page.offset).toBe(0);
+  });
+
+  it("offset を渡すとその offset で取得する", async () => {
+    const { client, getResourceCollection } = fakeClient(channelMessagesResponse);
+
+    await fetchChannelMessages(1, 100, client);
+
+    const [, options] = getResourceCollection.mock.calls[0];
+    expect(options.params.page.offset).toBe(100);
+  });
+
+  it("残件が limit 未満（かつ links.next 無し）なら hasNext=false", async () => {
+    const { client } = fakeClient(channelMessagesResponse); // 6 件 < 100
+    const page = await fetchChannelMessages(1, 0, client);
+    expect(page.hasNext).toBe(false);
+  });
+
+  it("links.next があれば件数に関わらず hasNext=true", async () => {
+    const { client } = fakeClient({
+      ...channelMessagesResponse,
+      links: { next: { href: "https://example.com/jsonapi/node/slack_message?page[offset]=100" } },
+    });
+    const page = await fetchChannelMessages(1, 0, client);
+    expect(page.hasNext).toBe(true);
+  });
+
+  /**
+   * Drupal core JSON:API の `links.next` は「まだ後続ページがある」ことを表す
+   * 信頼できる契約であり、data 件数が limit と同数という length heuristic は
+   * 使わない（総件数が limit の倍数の最終ページで links.next が正しく省かれて
+   * いるのに hasNext=true と誤判定し、空ページへ誘導するのを防ぐため）。
+   */
+  it("links が無ければ data 件数が limit と同数でも hasNext=false", async () => {
+    const full = { data: Array(100).fill(rawMessages[0]) };
+    const { client } = fakeClient(full);
+    const page = await fetchChannelMessages(1, 0, client);
+    expect(page.hasNext).toBe(false);
   });
 });

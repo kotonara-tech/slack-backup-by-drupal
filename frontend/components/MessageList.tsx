@@ -3,7 +3,7 @@
 /**
  * スレッド一覧。チャンネル未選択 / 読み込み中 / 0 件 / 一覧 の各状態を出し分ける。
  */
-import { Center, Loader, Stack, Text } from "@mantine/core";
+import { Button, Center, Loader, Stack, Text } from "@mantine/core";
 
 import { ThreadView } from "@/components/ThreadView";
 import type { Thread, User } from "@/lib/types/slack";
@@ -14,6 +14,12 @@ interface MessageListProps {
   channelSelected?: boolean;
   isLoading?: boolean;
   isError?: boolean;
+  /** 残ページの有無（真のとき「さらに読み込む」ボタンを表示する）。 */
+  hasNextPage?: boolean;
+  /** 追加読み込み中フラグ（ボタンを disabled にする）。 */
+  isFetchingNextPage?: boolean;
+  /** 「さらに読み込む」押下時のコールバック。 */
+  onLoadMore?: () => void;
 }
 
 export function MessageList({
@@ -22,6 +28,9 @@ export function MessageList({
   channelSelected = false,
   isLoading = false,
   isError = false,
+  hasNextPage = false,
+  isFetchingNextPage = false,
+  onLoadMore,
 }: MessageListProps) {
   if (!channelSelected) {
     return (
@@ -66,6 +75,18 @@ export function MessageList({
       {threads.map((thread) => (
         <ThreadView key={thread.root.id} thread={thread} userMap={userMap} />
       ))}
+      {hasNextPage && (
+        <Center>
+          <Button
+            data-testid="load-more"
+            onClick={onLoadMore}
+            loading={isFetchingNextPage}
+            disabled={isFetchingNextPage}
+          >
+            さらに読み込む
+          </Button>
+        </Center>
+      )}
     </Stack>
   );
 }
