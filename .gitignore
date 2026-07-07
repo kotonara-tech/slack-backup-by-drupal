@@ -108,3 +108,6 @@
 
 /.editorconfig
 /.gitattributes
+
+# Claude Code agent worktrees（並列開発の一時作業ツリー）
+/.claude/worktrees/
