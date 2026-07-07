@@ -80,9 +80,10 @@ describe("SearchResultList", () => {
   });
 
   it("結果ありのとき検索語をハイライトして描画する", () => {
+    const threadMessage = sampleMessages.find((m) => m.id === "m-parent")!;
     const { container } = renderUI(
       <SearchResultList
-        page={makePage()}
+        page={makePage({ messages: [threadMessage], totalCount: 1 })}
         filters={{ fulltext: "スレッド", offset: 0 }}
         isLoading={false}
         isError={false}
