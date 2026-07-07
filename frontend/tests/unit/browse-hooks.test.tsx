@@ -17,6 +17,7 @@ vi.mock("@/lib/slack-api", () => ({
   fetchChannels: vi.fn(),
   fetchUsers: vi.fn(),
   fetchChannelMessages: vi.fn(),
+  CHANNEL_MESSAGES_PAGE_LIMIT: 100,
 }));
 
 function createWrapper() {
@@ -94,7 +95,7 @@ describe("browse hooks", () => {
       await result.current.fetchNextPage();
     });
 
-    expect(result.current.messages).toHaveLength(2);
+    await waitFor(() => expect(result.current.messages).toHaveLength(2));
     expect(result.current.hasNextPage).toBe(false);
   });
 

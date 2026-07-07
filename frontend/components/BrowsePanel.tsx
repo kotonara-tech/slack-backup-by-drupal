@@ -29,8 +29,8 @@ export function BrowsePanel() {
 
   const userMap = useMemo(() => buildUserMap(users.data ?? []), [users.data]);
   const threads = useMemo(
-    () => groupIntoThreads(messages.data ?? []),
-    [messages.data],
+    () => groupIntoThreads(messages.messages),
+    [messages.messages],
   );
 
   const selectedChannel = channels.data?.find((c) => c.tid === selectedTid);
@@ -83,6 +83,9 @@ export function BrowsePanel() {
             channelSelected={selectedTid != null}
             isLoading={messages.isLoading}
             isError={messages.isError}
+            hasNextPage={messages.hasNextPage}
+            isFetchingNextPage={messages.isFetchingNextPage}
+            onLoadMore={() => messages.fetchNextPage()}
           />
         </Stack>
       </AppShell.Main>
