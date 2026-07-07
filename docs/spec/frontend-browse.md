@@ -39,10 +39,11 @@ related:
 |---|---|---|
 | `fetchChannels` | `taxonomy_term--slack_channels` | `name` 昇順・`page[limit]=200`（匿名→public のみ） |
 | `fetchUsers` | `taxonomy_term--slack_users` | `page[limit]=200`（全件・1 フェッチ） |
-| `fetchChannelMessages(tid)` | `node--slack_message` | `filter[CHANNEL_FILTER_PATH]=<tid>`・`include=field_attachments`・`sort=-field_posted_at`・`page[limit]=100` |
+| `fetchChannelMessages(tid, offset)` | `node--slack_message` | `filter[CHANNEL_FILTER_PATH]=<tid>`・`include=field_attachments`・`sort=-field_posted_at`・`page[limit]=100`・`page[offset]=<offset>` |
 
 - **`CHANNEL_FILTER_PATH = "field_channel.meta.drupal_internal__target_id"`**（1 箇所に固定。実 API 検証済）。
-- M4 は単一ページ（`page[limit]=100`）。ページング/無限スクロールは後続。
+- 1 ページ `CHANNEL_MESSAGES_PAGE_LIMIT = 100`。`buildChannelMessagesParams(tid, offset)` が `page[offset]` を付け、追加読み込みで offset を進める（§9）。
+- `fetchChannelMessages` は `{ messages, hasNext }` を返す（`hasNext` は `links.next` 有無を優先、無ければ `length === 100` でフォールバック）。
 
 ### mapper の要点
 
@@ -94,8 +95,8 @@ JSON:API の `field_posted_at` は **offset 付き ISO**（例 `2026-05-17T15:38
 
 - `app/page.tsx`（トップ＝閲覧画面）→ `BrowsePanel`（`"use client"`）。プロバイダ（Mantine／TanStack Query）は `app/layout.tsx` の `Providers` が wrap 済。
 - `BrowsePanel`＝Mantine `AppShell`：`AppShell.Navbar`＝`ChannelList`、`AppShell.Main`＝`MessageList`、`AppShell.Header`＝`Burger`（`hiddenFrom="sm"`、モバイルで navbar 開閉）。主見出しは `h1`。
-- `useChannelMessages(tid)` は `enabled: tid != null` の依存クエリ（tid ごとにキー分離）。
-- `MessageList` の状態出し分け：未選択（案内）／読込中（アクセシブル Loader）／取得失敗（`role="alert"`）／0 件／一覧。
+- `useChannelMessages(tid)` は `enabled: tid != null` の依存クエリ（tid ごとにキー分離）。ページングは `useInfiniteQuery`（各ページの `messages` を平坦化して返す。§9）。
+- `MessageList` の状態出し分け：未選択（案内）／読込中（アクセシブル Loader）／取得失敗（`role="alert"`）／0 件／一覧。末尾に「さらに読み込む」ボタン（`hasNextPage` 時のみ・読込中は loader）。
 
 ---
 
@@ -106,10 +107,11 @@ JSON:API の `field_posted_at` は **offset 付き ISO**（例 `2026-05-17T15:38
 
 ---
 
-## 9. 既知の制約・後続
+## 9. ページング（追加読み込み）・後続
 
-- ページング/無限スクロールは未実装（M4 は `page[limit]=100` 単一ページ）。
-- 全文検索 UI は [docs/plan/05](../plan/05-frontend-search.md)（M5）。`/jsonapi/index/slack_messages` と facets を消費する。
+- チャンネル閲覧は `useInfiniteQuery`（`useChannelMessages`）でページングする。`buildChannelMessagesParams(tid, offset)` が `page[offset]` を進め、`fetchChannelMessages` が返す `{ messages, hasNext }` の `hasNext`（`links.next` 有無を優先、無ければ `length === 100`）で次ページ有無を判定する。
+- `MessageList` は末尾に「さらに読み込む」ボタンを出す（`hasNextPage` 時のみ・読込中は loader）。取得済み全ページを平坦化し `groupIntoThreads` にかける（orphan 救済は取得済み範囲に対して働く）。
+- 全文検索 UI は [docs/spec/frontend-search.md](./frontend-search.md)（M5）。`/jsonapi/index/slack_messages` と facets を消費する。検索側は明示ページング（`SEARCH_PAGE_SIZE=20`）。
 - 添付は public メッセージにはほぼ存在しない（private は backend で遮断）。
 
 ---
