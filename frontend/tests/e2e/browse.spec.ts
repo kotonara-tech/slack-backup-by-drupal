@@ -149,3 +149,48 @@ test("チャンネルを選ぶとスレッドが見え、返信を展開でき�
 
   await page.screenshot({ path: "test-results/browse-thread.png", fullPage: true });
 });
+
+test("さらに読み込むボタンで次ページのメッセージを追加表示する", async ({ page }) => {
+  await page.route("**/jsonapi/taxonomy_term/slack_channels*", (route) =>
+    route.fulfill({ status: 200, contentType: JSONAPI, body: JSON.stringify(channelsResponse) }),
+  );
+  await page.route("**/jsonapi/taxonomy_term/slack_users*", (route) =>
+    route.fulfill({ status: 200, contentType: JSONAPI, body: JSON.stringify(usersResponse) }),
+  );
+  await page.route("**/jsonapi/node/slack_message*", (route) => {
+    const url = new URL(route.request().url());
+    const offset = url.searchParams.get("page[offset]");
+    if (offset === "100") {
+      const olderResponse = {
+        data: [message("m-older", "50.0001", null, "もっと古いメッセージ", "u-taro")],
+      };
+      return route.fulfill({
+        status: 200,
+        contentType: JSONAPI,
+        body: JSON.stringify(olderResponse),
+      });
+    }
+    // 1 ページ目: links.next を付けて残ページありを知らせる。
+    const firstPageResponse = {
+      ...messagesResponse,
+      links: { next: { href: "https://example.com/jsonapi/node/slack_message?page[offset]=100" } },
+    };
+    return route.fulfill({
+      status: 200,
+      contentType: JSONAPI,
+      body: JSON.stringify(firstPageResponse),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByText("general").click();
+  await expect(page.getByText("スレッドの親メッセージ")).toBeVisible();
+
+  // 1 ページ目に残りがあるので「さらに読み込む」が出る。
+  await expect(page.getByTestId("load-more")).toBeVisible();
+  await page.getByTestId("load-more").click();
+
+  // 2 ページ目のメッセージが追加表示され、2 ページ目には次が無いのでボタンは消える。
+  await expect(page.getByText("もっと古いメッセージ")).toBeVisible();
+  await expect(page.getByTestId("load-more")).toHaveCount(0);
+});

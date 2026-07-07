@@ -19,12 +19,29 @@ vi.mock("@/lib/hooks/useChannelMessages", () => ({
 const asResult = (data: unknown, extra: Record<string, unknown> = {}) =>
   ({ data, isLoading: false, isSuccess: true, ...extra }) as any;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const asMessagesResult = (
+  messages: unknown,
+  extra: Record<string, unknown> = {},
+) =>
+  ({
+    messages,
+    isLoading: false,
+    isError: false,
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    fetchNextPage: vi.fn(),
+    ...extra,
+  }) as any;
+
 describe("BrowsePanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useChannels).mockReturnValue(asResult(sampleChannels));
     vi.mocked(useUsers).mockReturnValue(asResult(sampleUsers));
-    vi.mocked(useChannelMessages).mockReturnValue(asResult(sampleMessages));
+    vi.mocked(useChannelMessages).mockReturnValue(
+      asMessagesResult(sampleMessages),
+    );
   });
 
   it("チャンネル一覧を出し、初期はチャンネル未選択の案内を出す", () => {
@@ -57,11 +74,23 @@ describe("BrowsePanel", () => {
 
   it("メッセージ取得失敗時はエラー表示を出す", () => {
     vi.mocked(useChannelMessages).mockReturnValue(
-      asResult(undefined, { isError: true, isSuccess: false }),
+      asMessagesResult([], { isError: true }),
     );
     renderUI(<BrowsePanel />);
     fireEvent.click(screen.getByText("general"));
     expect(screen.getByTestId("messages-error")).toBeInTheDocument();
+  });
+
+  it("hasNextPage のとき「さらに読み込む」ボタンを描画し押下で fetchNextPage を呼ぶ", () => {
+    const fetchNextPage = vi.fn();
+    vi.mocked(useChannelMessages).mockReturnValue(
+      asMessagesResult(sampleMessages, { hasNextPage: true, fetchNextPage }),
+    );
+    renderUI(<BrowsePanel />);
+    fireEvent.click(screen.getByText("general"));
+
+    fireEvent.click(screen.getByTestId("load-more"));
+    expect(fetchNextPage).toHaveBeenCalled();
   });
 
   it("主見出しはページの h1 である（見出し階層）", () => {
