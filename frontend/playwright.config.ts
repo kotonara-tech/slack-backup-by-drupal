@@ -11,6 +11,12 @@ export default defineConfig({
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
     trace: "on-first-retry",
+    // opt-in: サンドボックス等で `playwright install` の期待 rev が無い環境向けに、
+    // 実際に導入済みの Chromium バイナリを指す。未設定なら従来どおり playwright
+    // 管理下のバイナリを使う（CI の挙動は変えない）。
+    launchOptions: {
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
+    },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   // frontend dev サーバを自動起動（既存があれば再利用）。E2E はモック（page.route）で
