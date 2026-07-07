@@ -57,7 +57,8 @@ export function buildSearchParams(filters: SearchFilters): DrupalJsonApiParams {
 
 /** `meta.facets` を `Facet[]` へ整形する。欠落・空でも空配列を返す。 */
 export function mapFacets(meta: Record<string, unknown> | undefined): Facet[] {
-  const rawFacets = (meta?.facets as RawFacet[] | undefined) ?? [];
+  const candidate = meta?.facets;
+  const rawFacets = Array.isArray(candidate) ? (candidate as RawFacet[]) : [];
   return rawFacets.map((facet) => ({
     id: facet.id,
     label: facet.label,

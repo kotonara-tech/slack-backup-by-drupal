@@ -18,6 +18,12 @@ interface SearchResultListProps {
   filters: SearchFilters;
   isLoading: boolean;
   isError: boolean;
+  /**
+   * `keepPreviousData` により前回データを保持したまま次のフェッチが進行中か
+   * （facet/ページ切替の遷移中）。true の間は件数表示を「更新中」に切り替え、
+   * ページングボタンを disabled にして連打による offset 暴走を防ぐ。
+   */
+  isPlaceholderData?: boolean;
   query: string;
   channelMap: Record<string, Channel>;
   userMap: Record<string, User>;
@@ -42,6 +48,7 @@ export function SearchResultList({
   filters,
   isLoading,
   isError,
+  isPlaceholderData = false,
   query,
   channelMap,
   userMap,
@@ -90,26 +97,39 @@ export function SearchResultList({
 
   return (
     <Stack gap="sm" data-testid="search-result-list">
-      <Text size="sm" c="dimmed" role="status">
-        {from}–{to} 件目
-        {page.totalCount != null && <> / 全 {page.totalCount} 件</>}
-      </Text>
+      <Group gap="xs">
+        <Text size="sm" c="dimmed" role="status">
+          {isPlaceholderData ? (
+            "更新中…"
+          ) : (
+            <>
+              {from}–{to} 件目
+              {page.totalCount != null && <> / 全 {page.totalCount} 件</>}
+            </>
+          )}
+        </Text>
+        {isPlaceholderData && (
+          <Loader size="xs" data-testid="search-updating" aria-hidden="true" />
+        )}
+      </Group>
 
-      {page.messages.map((message) => (
-        <SearchResultItem
-          key={message.id}
-          message={message}
-          query={query}
-          channelName={channelName(channelMap, message.channelUuid)}
-          authorName={authorName(userMap, message.authorUuid)}
-        />
-      ))}
+      <Stack gap="sm" style={{ opacity: isPlaceholderData ? 0.6 : 1 }}>
+        {page.messages.map((message) => (
+          <SearchResultItem
+            key={message.id}
+            message={message}
+            query={query}
+            channelName={channelName(channelMap, message.channelUuid)}
+            authorName={authorName(userMap, message.authorUuid)}
+          />
+        ))}
+      </Stack>
 
       <Group justify="center" gap="sm">
         <Button
           data-testid="search-prev"
           variant="default"
-          disabled={filters.offset <= 0}
+          disabled={filters.offset <= 0 || isPlaceholderData}
           onClick={onPrev}
         >
           前へ
@@ -117,7 +137,7 @@ export function SearchResultList({
         <Button
           data-testid="search-next"
           variant="default"
-          disabled={!page.hasNext}
+          disabled={!page.hasNext || isPlaceholderData}
           onClick={onNext}
         >
           次へ

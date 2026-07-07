@@ -145,6 +145,7 @@ export function BrowsePanel() {
               filters={searchFilters ?? EMPTY_SEARCH_FILTERS}
               isLoading={search.isLoading}
               isError={search.isError}
+              isPlaceholderData={search.isPlaceholderData}
               query={searchFilters?.fulltext ?? ""}
               channelMap={channelMap}
               userMap={userMap}
