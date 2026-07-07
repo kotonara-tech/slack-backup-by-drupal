@@ -276,10 +276,16 @@ describe("fetchChannelMessages のページング", () => {
     expect(page.hasNext).toBe(true);
   });
 
-  it("links が無くても data 件数が limit と同数なら hasNext=true", async () => {
+  /**
+   * Drupal core JSON:API の `links.next` は「まだ後続ページがある」ことを表す
+   * 信頼できる契約であり、data 件数が limit と同数という length heuristic は
+   * 使わない（総件数が limit の倍数の最終ページで links.next が正しく省かれて
+   * いるのに hasNext=true と誤判定し、空ページへ誘導するのを防ぐため）。
+   */
+  it("links が無ければ data 件数が limit と同数でも hasNext=false", async () => {
     const full = { data: Array(100).fill(rawMessages[0]) };
     const { client } = fakeClient(full);
     const page = await fetchChannelMessages(1, 0, client);
-    expect(page.hasNext).toBe(true);
+    expect(page.hasNext).toBe(false);
   });
 });

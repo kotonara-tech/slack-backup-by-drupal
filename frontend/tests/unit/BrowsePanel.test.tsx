@@ -7,6 +7,7 @@ import { useChannels } from "@/lib/hooks/useChannels";
 import { useUsers } from "@/lib/hooks/useUsers";
 import { useChannelMessages } from "@/lib/hooks/useChannelMessages";
 import { useSearch } from "@/lib/hooks/useSearch";
+import { SEARCH_PAGE_SIZE } from "@/lib/search-api";
 import { sampleChannels, sampleUsers, sampleMessages } from "../fixtures/jsonapi";
 import { renderWithMantine as renderUI } from "../helpers/render";
 
@@ -195,6 +196,26 @@ describe("BrowsePanel", () => {
         fulltext: "hello",
         offset: 0,
         channel: "general",
+      });
+    });
+
+    it("「次へ」押下で offset が SEARCH_PAGE_SIZE 分だけ進む", () => {
+      vi.mocked(useSearch).mockReturnValue(
+        asSearchResult({
+          messages: [sampleMessages[0]],
+          facets: [],
+          totalCount: 100,
+          hasNext: true,
+        }),
+      );
+      renderUI(<BrowsePanel />);
+
+      submitSearch("hello");
+      fireEvent.click(screen.getByTestId("search-next"));
+
+      expect(useSearch).toHaveBeenLastCalledWith({
+        fulltext: "hello",
+        offset: SEARCH_PAGE_SIZE,
       });
     });
   });

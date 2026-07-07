@@ -15,6 +15,8 @@ import {
   searchResultsResponse,
   searchResultsResponseFullPageNoLinks,
   searchResultsResponseNoNext,
+  searchResultsResponseWithCountExhausted,
+  searchResultsResponseWithCountHasMore,
 } from "../fixtures/search";
 
 /**
@@ -212,12 +214,38 @@ describe("fetchSearchResults", () => {
     expect(result.hasNext).toBe(false);
   });
 
-  it("links.next が無くても SEARCH_PAGE_SIZE 件ヒットしていれば hasNext=true", async () => {
+  /**
+   * hasNext は backend（jsonapi_search_api IndexResource）の契約に整合させる:
+   * `meta.count`（totalCount）が数値なら `offset + 件数 < totalCount` で判定し、
+   * 無ければ `links.next` の有無で判定する。件数が page size と同数という
+   * length heuristic は使わない（総件数が page size の倍数の最終ページで
+   * 空ページへ誘導する偽陽性を生むため）。
+   */
+  it("meta.count がちょうど offset+件数と一致する最終ページは links.next 無しで hasNext=false", async () => {
     const { client } = stubFetch(searchResultsResponseFullPageNoLinks);
 
     const result = await fetchSearchResults({ fulltext: "hello", offset: 0 }, client);
 
     expect(result.messages).toHaveLength(SEARCH_PAGE_SIZE);
+    expect(result.totalCount).toBe(SEARCH_PAGE_SIZE);
+    expect(result.hasNext).toBe(false);
+  });
+
+  it("meta.count が offset+件数より大きければ links.next 無しでも hasNext=true", async () => {
+    const { client } = stubFetch(searchResultsResponseWithCountHasMore);
+
+    const result = await fetchSearchResults({ fulltext: "hello", offset: 0 }, client);
+
+    expect(result.totalCount).toBe(50);
     expect(result.hasNext).toBe(true);
+  });
+
+  it("meta.count が offset+件数と一致すれば hasNext=false", async () => {
+    const { client } = stubFetch(searchResultsResponseWithCountExhausted);
+
+    const result = await fetchSearchResults({ fulltext: "hello", offset: 0 }, client);
+
+    expect(result.totalCount).toBe(2);
+    expect(result.hasNext).toBe(false);
   });
 });

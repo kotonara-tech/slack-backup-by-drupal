@@ -79,6 +79,29 @@ describe("SearchResultList", () => {
     expect(screen.getByTestId("search-no-results")).toBeInTheDocument();
   });
 
+  it("0 件でも offset>0 なら「前へ」を描画し押下で onPrev を呼ぶ（空ページからの復帰）", () => {
+    const onPrev = vi.fn();
+    renderUI(
+      <SearchResultList
+        page={makePage({ messages: [], totalCount: 20 })}
+        filters={{ fulltext: "hello", offset: 20 }}
+        isLoading={false}
+        isError={false}
+        query="hello"
+        channelMap={channelMap}
+        userMap={sampleUserMap}
+        onPrev={onPrev}
+        onNext={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("search-no-results")).toBeInTheDocument();
+    const prevButton = screen.getByTestId("search-prev");
+    expect(prevButton).toBeEnabled();
+    fireEvent.click(prevButton);
+    expect(onPrev).toHaveBeenCalled();
+  });
+
   it("結果ありのとき検索語をハイライトして描画する", () => {
     const threadMessage = sampleMessages.find((m) => m.id === "m-parent")!;
     const { container } = renderUI(

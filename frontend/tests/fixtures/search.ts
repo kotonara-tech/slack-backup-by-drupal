@@ -4,6 +4,7 @@
  * facet 応答は `meta.facets`。`empty_behavior: none` により 0 件 facet は配列ごと
  * 省略されうるため、facet が 1 つも無い（`meta` 自体が空）ケースも用意する。
  */
+import { SEARCH_PAGE_SIZE } from "@/lib/search-api";
 import type { JsonApiResource, JsonApiResponse } from "@/lib/types/slack";
 
 import { rawFiles, rawMessages } from "./jsonapi";
@@ -54,7 +55,7 @@ export const searchResultsResponseNoNext: JsonApiResponse = {
   meta: {},
 };
 
-/** ちょうど 1 ページ分（20 件）ヒットし、`links.next` を返さないレスポンス。 */
+/** ちょうど 1 ページ分（`SEARCH_PAGE_SIZE` 件）ヒットし、`links.next` を返さないレスポンス。 */
 function clonedMessage(index: number): JsonApiResource {
   const base = rawMessages[0];
   return {
@@ -64,7 +65,24 @@ function clonedMessage(index: number): JsonApiResource {
   };
 }
 
+/**
+ * ちょうど最終ページ（`meta.count` が offset+件数と一致）で `links.next` を
+ * 返さないレスポンス。旧 length heuristic では偽陽性で hasNext=true になっていたが、
+ * `meta.count` 基準では正しく hasNext=false になるべきケース。
+ */
 export const searchResultsResponseFullPageNoLinks: JsonApiResponse = {
-  data: Array.from({ length: 20 }, (_, i) => clonedMessage(i)),
-  meta: {},
+  data: Array.from({ length: SEARCH_PAGE_SIZE }, (_, i) => clonedMessage(i)),
+  meta: { count: SEARCH_PAGE_SIZE },
+};
+
+/** `meta.count` が offset+件数より大きい（まだ後続ページがある）レスポンス。`links.next` は無い。 */
+export const searchResultsResponseWithCountHasMore: JsonApiResponse = {
+  data: rawMessages.slice(0, 2),
+  meta: { count: 50 },
+};
+
+/** `meta.count` が offset+件数と一致（後続ページ無し）レスポンス。`links.next` も無い。 */
+export const searchResultsResponseWithCountExhausted: JsonApiResponse = {
+  data: rawMessages.slice(0, 2),
+  meta: { count: 2 },
 };
