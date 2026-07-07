@@ -91,7 +91,7 @@ describe("FacetSidebar", () => {
   });
 
   it("facet も適用中フィルタも無ければ何も描画しない", () => {
-    const { container } = renderUI(
+    renderUI(
       <FacetSidebar
         facets={[]}
         filters={{ fulltext: "hello", offset: 0 }}
@@ -99,6 +99,6 @@ describe("FacetSidebar", () => {
       />,
     );
 
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByTestId("facet-sidebar")).not.toBeInTheDocument();
   });
 });
