@@ -102,6 +102,11 @@ describe("mapFacets", () => {
     expect(mapFacets(undefined)).toEqual([]);
     expect(mapFacets({})).toEqual([]);
   });
+
+  it("meta.facets が配列でない不正形状でも throw せず空配列を返す", () => {
+    expect(mapFacets({ facets: "not-an-array" })).toEqual([]);
+    expect(mapFacets({ facets: { channel: [] } })).toEqual([]);
+  });
 });
 
 /**

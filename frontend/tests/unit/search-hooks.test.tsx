@@ -69,6 +69,49 @@ describe("useSearch", () => {
     expect(result.current.data).toEqual(emptyPage);
   });
 
+  it("取得失敗を isError で伝える", async () => {
+    vi.mocked(api.fetchSearchResults).mockRejectedValue(new Error("boom"));
+    const { wrapper } = createWrapper();
+
+    const { result } = renderHook(
+      () => useSearch({ fulltext: "hello", offset: 0 }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it("filters 変更中は前回データを保持しつつ isPlaceholderData/isFetching を true にする", async () => {
+    const firstPage: SearchResultPage = { ...emptyPage, totalCount: 1 };
+    let resolveSecond: (page: SearchResultPage) => void = () => {};
+    const secondPagePromise = new Promise<SearchResultPage>((resolve) => {
+      resolveSecond = resolve;
+    });
+    vi.mocked(api.fetchSearchResults)
+      .mockResolvedValueOnce(firstPage)
+      .mockReturnValueOnce(secondPagePromise);
+    const { wrapper } = createWrapper();
+
+    const { result, rerender } = renderHook(
+      ({ filters }) => useSearch(filters),
+      { wrapper, initialProps: { filters: { fulltext: "hello", offset: 0 } } },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.isPlaceholderData).toBe(false);
+
+    rerender({ filters: { fulltext: "hello", offset: 20 } });
+
+    await waitFor(() => expect(result.current.isFetching).toBe(true));
+    expect(result.current.isPlaceholderData).toBe(true);
+    expect(result.current.data).toEqual(firstPage); // 前回データを保持
+
+    resolveSecond({ ...emptyPage, totalCount: 2 });
+
+    await waitFor(() => expect(result.current.isPlaceholderData).toBe(false));
+    expect(result.current.data).toEqual({ ...emptyPage, totalCount: 2 });
+  });
+
   it("filters が変わると再フェッチする", async () => {
     vi.mocked(api.fetchSearchResults).mockResolvedValue(emptyPage);
     const { wrapper } = createWrapper();

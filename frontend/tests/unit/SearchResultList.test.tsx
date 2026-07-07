@@ -257,4 +257,68 @@ describe("SearchResultList", () => {
     fireEvent.click(nextButton);
     expect(onNext).toHaveBeenCalled();
   });
+
+  /**
+   * isPlaceholderData（keepPreviousData による遷移中）は、前回データを保持したまま
+   * 新しいフェッチが進行している状態。件数表示の食い違いを避けて「更新中」を示し、
+   * 連打による offset 暴走を防ぐためページングボタンを disabled にする。
+   */
+  it("isPlaceholderData のとき件数の代わりに更新中を live region に表示する", () => {
+    renderUI(
+      <SearchResultList
+        page={makePage({ totalCount: 42 })}
+        filters={{ fulltext: "hello", offset: 0 }}
+        isLoading={false}
+        isError={false}
+        isPlaceholderData
+        query="hello"
+        channelMap={channelMap}
+        userMap={sampleUserMap}
+        onPrev={vi.fn()}
+        onNext={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("更新中");
+    expect(screen.queryByText(/全 42 件/)).not.toBeInTheDocument();
+  });
+
+  it("isPlaceholderData のとき視覚的な更新中インジケータを表示する", () => {
+    renderUI(
+      <SearchResultList
+        page={makePage()}
+        filters={{ fulltext: "hello", offset: 0 }}
+        isLoading={false}
+        isError={false}
+        isPlaceholderData
+        query="hello"
+        channelMap={channelMap}
+        userMap={sampleUserMap}
+        onPrev={vi.fn()}
+        onNext={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("search-updating")).toBeInTheDocument();
+  });
+
+  it("isPlaceholderData のときページングボタンは disabled になる（連打による offset 暴走防止）", () => {
+    renderUI(
+      <SearchResultList
+        page={makePage({ hasNext: true })}
+        filters={{ fulltext: "hello", offset: 20 }}
+        isLoading={false}
+        isError={false}
+        isPlaceholderData
+        query="hello"
+        channelMap={channelMap}
+        userMap={sampleUserMap}
+        onPrev={vi.fn()}
+        onNext={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("search-prev")).toBeDisabled();
+    expect(screen.getByTestId("search-next")).toBeDisabled();
+  });
 });
