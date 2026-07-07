@@ -149,11 +149,20 @@ describe("BrowsePanel", () => {
     });
 
     it("検索をクリアすると閲覧モードに戻る（選択中チャンネルは保持）", () => {
+      vi.mocked(useSearch).mockReturnValue(
+        asSearchResult({
+          messages: [sampleMessages[0]],
+          facets: [],
+          totalCount: 1,
+          hasNext: false,
+        }),
+      );
       renderUI(<BrowsePanel />);
       fireEvent.click(screen.getByText("general"));
 
       submitSearch("hello");
       expect(screen.getByTestId("search-result-list")).toBeInTheDocument();
+      expect(screen.queryByTestId("channel-list")).not.toBeInTheDocument();
 
       submitSearch("");
 
