@@ -26,6 +26,17 @@ const FILTER_KEY_BY_FACET: Record<FacetId, "channel" | "slackUser" | "postedAt">
   posted_at: "postedAt",
 };
 
+/**
+ * 適用中フィルタ chip の aria-label 用の表示ラベル。
+ * chip は facets 配列に facet 自体が無い（0 件省略）ときにも出るため、
+ * `facet.label` に依存できず静的な対応表を持つ。
+ */
+const FACET_DISPLAY_LABEL: Record<FacetId, string> = {
+  channel: "Channel",
+  slack_user: "Slack User",
+  posted_at: "Posted At",
+};
+
 const FACET_IDS = Object.keys(FILTER_KEY_BY_FACET) as FacetId[];
 
 interface ActiveChip {
@@ -64,7 +75,7 @@ export function FacetSidebar({ facets, filters, onToggle }: FacetSidebarProps) {
               rightSection={
                 <CloseButton
                   size="xs"
-                  aria-label={`${facetId} の絞り込みを解除`}
+                  aria-label={`${FACET_DISPLAY_LABEL[facetId]}: ${value} の絞り込みを解除`}
                   onClick={() => onToggle(facetId, value)}
                 />
               }
@@ -83,6 +94,7 @@ export function FacetSidebar({ facets, filters, onToggle }: FacetSidebarProps) {
           {facet.terms.map((term) => (
             <NavLink
               key={term.value}
+              component="button"
               data-testid={`facet-term-${facet.id}-${term.value}`}
               label={`${term.value} (${term.count})`}
               active={term.active}

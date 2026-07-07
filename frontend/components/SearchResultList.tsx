@@ -81,7 +81,7 @@ export function SearchResultList({
 
   return (
     <Stack gap="sm" data-testid="search-result-list">
-      <Text size="sm" c="dimmed">
+      <Text size="sm" c="dimmed" role="status">
         {from}–{to} 件目
         {page.totalCount != null && <> / 全 {page.totalCount} 件</>}
       </Text>
