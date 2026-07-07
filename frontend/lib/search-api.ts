@@ -110,7 +110,14 @@ export async function fetchSearchResults(
   const messages = (json.data ?? []).map((m) => mapMessage(m, fileMap));
   const facets = mapFacets(json.meta);
   const totalCount = typeof json.meta?.count === "number" ? json.meta.count : null;
-  const hasNext = Boolean(json.links?.next) || messages.length === SEARCH_PAGE_SIZE;
+  // backend（jsonapi_search_api IndexResource）は offset+count<total のときのみ
+  // links.next を付与する信頼できる契約。meta.count が無いときのみ links.next を見る。
+  // 件数が page size と同数という length heuristic は使わない（総件数が page size
+  // の倍数の最終ページで偽陽性となり空ページへ誘導するため）。
+  const hasNext =
+    totalCount !== null
+      ? filters.offset + messages.length < totalCount
+      : Boolean(json.links?.next);
 
   return { messages, facets, totalCount, hasNext };
 }

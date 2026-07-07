@@ -68,11 +68,20 @@ export function SearchResultList({
 
   if (page.messages.length === 0) {
     return (
-      <Center mih={160}>
-        <Text c="dimmed" data-testid="search-no-results">
-          検索結果がありません
-        </Text>
-      </Center>
+      <Stack gap="sm" align="center">
+        <Center mih={160}>
+          <Text c="dimmed" data-testid="search-no-results">
+            検索結果がありません
+          </Text>
+        </Center>
+        {filters.offset > 0 && (
+          // 万一 hasNext の誤判定等で空ページに入っても「前へ」で戻れるようにする
+          // （防御的フォールバック。offset>0 のときのみ描画）。
+          <Button data-testid="search-prev" variant="default" onClick={onPrev}>
+            前へ
+          </Button>
+        )}
+      </Stack>
     );
   }
 

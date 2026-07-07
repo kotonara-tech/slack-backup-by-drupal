@@ -234,7 +234,8 @@ export async function fetchChannelMessages(
   );
   const fileMap = buildFileMap(res.included ?? []);
   const messages = (res.data ?? []).map((m) => mapMessage(m, fileMap));
-  const hasNext =
-    res.links?.next != null || messages.length === CHANNEL_MESSAGES_PAGE_LIMIT;
+  // Drupal core JSON:API の links.next は信頼できる契約のため、それのみで判定する
+  // （件数が limit と同数という length heuristic は最終ページで偽陽性になるため使わない）。
+  const hasNext = res.links?.next != null;
   return { messages, hasNext };
 }

@@ -25,7 +25,7 @@ import { useChannels } from "@/lib/hooks/useChannels";
 import { useUsers } from "@/lib/hooks/useUsers";
 import { useChannelMessages } from "@/lib/hooks/useChannelMessages";
 import { useSearch } from "@/lib/hooks/useSearch";
-import { toggleFacetValue } from "@/lib/search-api";
+import { SEARCH_PAGE_SIZE, toggleFacetValue } from "@/lib/search-api";
 import { buildUserMap } from "@/lib/slack-api";
 import { groupIntoThreads } from "@/lib/threads";
 import type { SearchFilters } from "@/lib/types/search";
@@ -79,12 +79,14 @@ export function BrowsePanel() {
 
   const handleSearchPrev = () => {
     setSearchFilters((prev) =>
-      prev ? { ...prev, offset: Math.max(0, prev.offset - 20) } : prev,
+      prev ? { ...prev, offset: Math.max(0, prev.offset - SEARCH_PAGE_SIZE) } : prev,
     );
   };
 
   const handleSearchNext = () => {
-    setSearchFilters((prev) => (prev ? { ...prev, offset: prev.offset + 20 } : prev));
+    setSearchFilters((prev) =>
+      prev ? { ...prev, offset: prev.offset + SEARCH_PAGE_SIZE } : prev,
+    );
   };
 
   return (
