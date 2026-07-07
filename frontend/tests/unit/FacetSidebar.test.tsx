@@ -58,6 +58,24 @@ describe("FacetSidebar", () => {
     expect(onToggle).toHaveBeenCalledWith("channel", "general");
   });
 
+  it("facet 項目は button 要素としてキーボードでフォーカス・操作できる", () => {
+    const onToggle = vi.fn();
+    renderUI(
+      <FacetSidebar
+        facets={facets}
+        filters={{ fulltext: "hello", offset: 0 }}
+        onToggle={onToggle}
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: "general (42)" });
+    button.focus();
+    expect(button).toHaveFocus();
+
+    fireEvent.click(button);
+    expect(onToggle).toHaveBeenCalledWith("channel", "general");
+  });
+
   it("active な値を aria-current で強調する", () => {
     renderUI(
       <FacetSidebar
@@ -86,7 +104,7 @@ describe("FacetSidebar", () => {
     const chip = screen.getByTestId("active-filter-channel");
     expect(chip).toHaveTextContent("general");
 
-    fireEvent.click(screen.getByLabelText("channel の絞り込みを解除"));
+    fireEvent.click(screen.getByLabelText("Channel: general の絞り込みを解除"));
     expect(onToggle).toHaveBeenCalledWith("channel", "general");
   });
 

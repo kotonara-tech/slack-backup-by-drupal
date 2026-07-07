@@ -101,6 +101,24 @@ describe("SearchResultList", () => {
     expect(marks[0]).toHaveTextContent("スレッド");
   });
 
+  it("件数表示は role=status の live region になっている", () => {
+    renderUI(
+      <SearchResultList
+        page={makePage({ totalCount: 42 })}
+        filters={{ fulltext: "hello", offset: 0 }}
+        isLoading={false}
+        isError={false}
+        query="hello"
+        channelMap={channelMap}
+        userMap={sampleUserMap}
+        onPrev={vi.fn()}
+        onNext={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(/全 42 件/);
+  });
+
   it("totalCount が非 null のとき「全 N 件」を表示する", () => {
     renderUI(
       <SearchResultList
